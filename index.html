@@ -16,54 +16,38 @@
             --text-main: #334155; --success: #16a34a; --danger: #e11d48; --border: #e2e8f0;
         }
         body { margin: 0; font-family: 'Outfit', sans-serif; background-color: var(--bg-color); color: var(--text-main); height: 100vh; overflow: hidden; }
-        
         .flex-between { display: flex; justify-content: space-between; align-items: center; }
         .text-muted { color: #64748b; font-size: 0.9rem; }
-
-        /* Login screen styling */
         #loginScreen { display: flex; align-items: center; justify-content: center; width: 100vw; height: 100vh; background-color: var(--sidebar-bg); }
         .login-card { background: white; padding: 40px; border-radius: 16px; width: 100%; max-width: 400px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); }
-        
-        /* App layout styling */
         #mainApp { display: none; width: 100%; height: 100vh; } 
         .sidebar { width: 260px; background-color: var(--sidebar-bg); color: white; padding: 24px; display: flex; flex-direction: column; flex-shrink: 0; }
         .brand-logo { display: flex; align-items: center; gap: 12px; margin-bottom: 40px; font-size: 1.4rem; font-weight: 700; border-bottom: 1px solid #1e293b; padding-bottom: 20px;}
         .brand-icon { background: var(--primary); padding: 6px 10px; border-radius: 8px; }
-
         .nav-btn { background: none; border: none; color: #94a3b8; text-align: left; font-size: 1rem; padding: 12px 16px; margin-bottom: 8px; cursor: pointer; border-radius: 8px; transition: 0.2s; font-family: inherit; }
         .nav-btn:hover { color: white; background-color: var(--sidebar-hover); }
         .nav-btn.active { color: white; background-color: var(--primary); font-weight: 600; }
-
         .main-content { flex-grow: 1; padding: 30px 50px; overflow-y: auto; background: var(--bg-color); }
-
-        /* Dashboard components */
         .kpi-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 24px; margin-bottom: 40px; }
         .card { background: var(--card-bg); padding: 24px; border-radius: 16px; border: 1px solid var(--border); box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
         .card h3 { margin: 0 0 8px 0; font-size: 0.85rem; color: #64748b; text-transform: uppercase; letter-spacing: 1px; }
         .card p { margin: 0; font-size: 2.2rem; font-weight: 700; color: var(--sidebar-bg); }
-
         .table-container { background: white; border-radius: 16px; border: 1px solid var(--border); overflow: hidden; margin-bottom: 30px;}
         table { width: 100%; border-collapse: collapse; }
         th { background: #f8fafc; padding: 16px; text-align: left; font-size: 0.85rem; color: #64748b; border-bottom: 1px solid var(--border); }
         td { padding: 16px; border-bottom: 1px solid #f1f5f9; font-size: 0.95rem; }
-
         .badge { padding: 4px 12px; border-radius: 99px; font-size: 0.75rem; font-weight: 700; display: inline-block; }
         .badge-consumed { background: #dbeafe; color: #1e40af; }
         .badge-received { background: #dcfce7; color: #166534; }
         .badge-warning { background: #fee2e2; color: #991b1b; }
-
         .btn { padding: 12px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; border: none; transition: 0.2s; font-family: inherit; }
         .btn-primary { background: var(--primary); color: white; }
-        .btn-primary:hover { background: var(--primary-hover); }
         .btn-outline { background: white; border: 1px solid var(--border); color: var(--text-main); }
-
-        /* Modal styling */
         .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); align-items: center; justify-content: center; z-index: 100; }
         .modal { background: white; width: 100%; max-width: 450px; border-radius: 20px; padding: 32px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
         .form-group { margin-bottom: 20px; }
         .form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: #475569; font-size: 0.9rem;}
         .form-group input, .form-group select { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 10px; font-family: inherit; font-size: 1rem; box-sizing: border-box; }
-        
         .search-input { width: 100%; padding: 14px; border-radius: 12px; border: 1px solid var(--border); font-family: inherit; font-size: 1rem; margin-bottom: 20px; box-sizing: border-box; }
         #syncStatus { font-size: 0.8rem; padding: 4px 10px; border-radius: 4px; background: #f1f5f9; display: inline-block; }
     </style>
@@ -75,7 +59,7 @@
             <div style="text-align: center; margin-bottom: 30px;">
                 <span class="brand-icon" style="font-size: 2rem; display: inline-block; margin-bottom: 15px;">📦</span>
                 <h2 style="margin:0">PalletTracker Pro</h2>
-                <p class="text-muted">Enter warehouse credentials</p>
+                <p class="text-muted">Production Access</p>
             </div>
             <div id="loginError" style="color: var(--danger); text-align: center; margin-bottom: 15px; display: none;"></div>
             <div class="form-group"><label>Email</label><input type="email" id="loginUsername" placeholder="warehouse@company.com"></div>
@@ -98,14 +82,11 @@
 
         <main class="main-content">
             <div id="dashboardView" class="view-section active">
-                <header>
-                    <h1 style="margin:0">Global Balance</h1>
-                    <p class="text-muted">Real-time pallet circulation</p>
-                </header>
+                <header><h1 style="margin:0">Warehouse Overview</h1></header>
                 <div class="kpi-container">
                     <div class="card"><h3>Active Debt</h3><p id="kpi-deficit">0</p></div>
-                    <div class="card"><h3>Consumed (Total)</h3><p id="kpi-consumed">0</p></div>
-                    <div class="card"><h3>Received (Total)</h3><p id="kpi-received">0</p></div>
+                    <div class="card"><h3>Total Consumed</h3><p id="kpi-consumed">0</p></div>
+                    <div class="card"><h3>Total Received</h3><p id="kpi-received">0</p></div>
                 </div>
                 <div class="table-container">
                     <table>
@@ -116,28 +97,25 @@
             </div>
 
             <div id="customersView" class="view-section" style="display:none">
-                <header><h1>Manage Directory</h1></header>
+                <h1>Customer Directory</h1>
                 <div class="card" style="margin-bottom: 30px;">
                     <div class="flex-between" style="gap:15px">
-                        <input type="text" id="newCustomerName" placeholder="New company name..." style="flex-grow:1; padding: 12px; border-radius: 8px; border:1px solid var(--border); font-family: inherit;">
+                        <input type="text" id="newCustomerName" placeholder="Add company..." style="flex-grow:1; padding: 12px; border-radius: 8px; border:1px solid var(--border); font-family: inherit;">
                         <button class="btn btn-primary" onclick="addCustomer()">Add Customer</button>
                     </div>
                 </div>
-                <div class="table-container"><table><thead><tr><th>Company Name</th><th style="text-align: right;">Action</th></tr></thead><tbody id="customerListBody"></tbody></table></div>
+                <div class="table-container"><table><thead><tr><th>Name</th><th style="text-align: right;">Action</th></tr></thead><tbody id="customerListBody"></tbody></table></div>
             </div>
 
             <div id="logView" class="view-section" style="display:none">
-                <header class="flex-between">
-                    <h1>Movement History</h1>
-                    <button class="btn btn-outline" onclick="exportToCSV()">📥 Export CSV</button>
-                </header>
-                <input type="text" class="search-input" id="logSearch" placeholder="Search by company or order reference..." onkeyup="filterLog()">
+                <header class="flex-between"><h1>Transaction History</h1><button class="btn btn-outline" onclick="exportToCSV()">📥 Export CSV</button></header>
+                <input type="text" class="search-input" id="logSearch" placeholder="Search ref numbers..." onkeyup="filterLog()">
                 <div class="table-container">
                     <table>
-                        <thead><tr><th>Date</th><th>Customer</th><th>Ref #</th><th>Quantity</th><th>Type</th></tr></thead>
+                        <thead><tr><th>Date</th><th>Customer</th><th>Ref #</th><th>Qty</th><th>Type</th></tr></thead>
                         <tbody id="historyTableBody"></tbody>
                     </table>
-                    <div id="noResults" style="display:none; padding: 40px; text-align: center; color: #94a3b8;">No movements found for that search.</div>
+                    <div id="noResults" style="display:none; padding: 40px; text-align: center; color: #94a3b8;">No matches found.</div>
                 </div>
             </div>
         </main>
@@ -145,97 +123,60 @@
 
     <div class="modal-overlay" id="entryModal">
         <div class="modal">
-            <h2 style="margin-top:0">Log Movement</h2>
+            <h2 style="margin-top:0">Log Activity</h2>
             <div class="form-group"><label>Customer</label><input type="text" id="modalCustName" readonly></div>
-            <div class="form-group">
-                <label>Type</label>
-                <select id="modalType">
-                    <option value="Consumed">Pallets Consumed (Delivery)</option>
-                    <option value="Received">Pallets Received (Return)</option>
-                </select>
-            </div>
-            <div class="form-group"><label>Order Reference / Delivery Note</label><input type="text" id="modalRef" placeholder="e.g. #PO-1234"></div>
+            <div class="form-group"><label>Type</label><select id="modalType"><option value="Consumed">Pallets Consumed</option><option value="Received">Pallets Received</option></select></div>
+            <div class="form-group"><label>Order Ref</label><input type="text" id="modalRef" placeholder="e.g. #PO-101"></div>
             <div class="form-group"><label>Quantity</label><input type="number" id="modalQty" min="1" placeholder="0"></div>
             <div class="form-group"><label>Date</label><input type="date" id="modalDate"></div>
             <div class="flex-between" style="margin-top: 30px;">
                 <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
-                <button class="btn btn-primary" onclick="saveEntry()">Confirm & Save</button>
+                <button class="btn btn-primary" onclick="saveEntry()">Save</button>
             </div>
         </div>
     </div>
 
     <script>
-        // 1. SUPABASE CONNECTION (DECLARED ONCE)
         const supabaseUrl = 'https://yeiisilddmpgphvcuqxf.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InllaWlzaWxkZG1wZ3BodmN1cXhmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE0ODM4MjksImV4cCI6MjA4NzA1OTgyOX0.0f2xE3NqZm9QrWAlSi-AoLMWT4cqiArbY6VMt0KlHDA';
         const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
         let appData = { customers: {}, transactions: [] };
 
-        // 2. AUTHENTICATION LOGIC
         supabase.auth.onAuthStateChange((e, s) => {
-            if (s) { 
-                document.getElementById('loginScreen').style.display = 'none'; 
-                document.getElementById('mainApp').style.display = 'flex'; 
-                fetchData(); 
-            } else { 
-                document.getElementById('loginScreen').style.display = 'flex'; 
-                document.getElementById('mainApp').style.display = 'none'; 
-            }
+            if (s) { document.getElementById('loginScreen').style.display = 'none'; document.getElementById('mainApp').style.display = 'flex'; fetchData(); } 
+            else { document.getElementById('loginScreen').style.display = 'flex'; document.getElementById('mainApp').style.display = 'none'; }
         });
 
         async function attemptLogin() {
             const email = document.getElementById('loginUsername').value;
             const password = document.getElementById('loginPassword').value;
             const { error } = await supabase.auth.signInWithPassword({ email, password });
-            if (error) { 
-                const errBox = document.getElementById('loginError');
-                errBox.innerText = error.message; 
-                errBox.style.display = 'block'; 
-            }
+            if (error) { document.getElementById('loginError').innerText = error.message; document.getElementById('loginError').style.display = 'block'; }
         }
 
         async function logout() { await supabase.auth.signOut(); }
 
-        // 3. DATA MANAGEMENT
         async function fetchData() {
             setSyncStatus('syncing');
             const { data: custs } = await supabase.from('customers').select('*').order('name');
-            const { data: trans } = await supabase.from('transactions').select('*').order('date', { ascending: false }).limit(1000);
-            
-            appData.customers = {}; 
-            custs.forEach(c => appData.customers[c.name] = c);
+            const { data: trans } = await supabase.from('transactions').select('*').order('date', { ascending: false }).limit(500);
+            appData.customers = {}; custs.forEach(c => appData.customers[c.name] = c);
             appData.transactions = trans;
-            
-            renderAll(); 
-            setSyncStatus('connected');
+            renderAll(); setSyncStatus('connected');
         }
 
-        function renderAll() { 
-            renderDashboard(); 
-            renderCustomerList(); 
-            renderHistory(); 
-        }
+        function renderAll() { renderDashboard(); renderCustomerList(); renderHistory(); }
 
         function renderDashboard() {
             const tbody = document.getElementById('ledgerTableBody'); tbody.innerHTML = '';
-            let totalC = 0, totalR = 0;
-            
+            let tC = 0, tR = 0;
             Object.values(appData.customers).forEach(c => {
-                totalC += c.delivered; totalR += c.returned;
+                tC += c.delivered; tR += c.returned;
                 const bal = c.delivered - c.returned;
-                tbody.innerHTML += `
-                    <tr>
-                        <td><strong>${c.name}</strong></td>
-                        <td>${c.delivered}</td>
-                        <td>${c.returned}</td>
-                        <td><span class="badge ${bal > 0 ? 'badge-warning' : 'badge-received'}">${bal}</span></td>
-                        <td><button class="btn btn-outline" style="padding: 6px 12px; font-size:0.8rem" onclick="openModal('${c.name}')">Log Flow</button></td>
-                    </tr>`;
+                tbody.innerHTML += `<tr><td><strong>${c.name}</strong></td><td>${c.delivered}</td><td>${c.returned}</td><td><span class="badge ${bal > 0 ? 'badge-warning' : 'badge-received'}">${bal}</span></td><td><button class="btn btn-outline" style="padding:6px 12px; font-size:0.8rem" onclick="openModal('${c.name}')">Log Flow</button></td></tr>`;
             });
-            document.getElementById('kpi-consumed').innerText = totalC; 
-            document.getElementById('kpi-received').innerText = totalR; 
-            document.getElementById('kpi-deficit').innerText = totalC - totalR;
+            document.getElementById('kpi-consumed').innerText = tC; document.getElementById('kpi-received').innerText = tR; document.getElementById('kpi-deficit').innerText = tC - tR;
         }
 
         function renderCustomerList() {
@@ -247,95 +188,51 @@
 
         function renderHistory() {
             const tbody = document.getElementById('historyTableBody'); tbody.innerHTML = '';
-            if (appData.transactions.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:30px; color:#94a3b8">No records yet.</td></tr>';
-                return;
-            }
             appData.transactions.forEach(t => {
                 const isC = t.type === 'Consumed';
-                const ref = t.reference || '<span style="color:#cbd5e1">N/A</span>';
-                tbody.innerHTML += `<tr><td>${t.date}</td><td><strong>${t.customer}</strong></td><td>${ref}</td><td>${t.qty}</td><td><span class="badge ${isC ? 'badge-consumed' : 'badge-received'}">${isC ? 'Consumed' : 'Received'}</span></td></tr>`;
+                tbody.innerHTML += `<tr><td>${t.date}</td><td><strong>${t.customer}</strong></td><td>${t.reference || '-'}</td><td>${t.qty}</td><td><span class="badge ${isC ? 'badge-consumed' : 'badge-received'}">${t.type}</span></td></tr>`;
             });
         }
 
         function filterLog() {
             const query = document.getElementById('logSearch').value.toLowerCase();
             const rows = document.querySelectorAll('#historyTableBody tr');
-            let anyFound = false;
-            rows.forEach(r => {
-                const visible = r.innerText.toLowerCase().includes(query);
-                r.style.display = visible ? '' : 'none';
-                if (visible) anyFound = true;
-            });
-            document.getElementById('noResults').style.display = anyFound ? 'none' : 'block';
+            let found = false;
+            rows.forEach(r => { const v = r.innerText.toLowerCase().includes(query); r.style.display = v ? '' : 'none'; if(v) found = true; });
+            document.getElementById('noResults').style.display = found ? 'none' : 'block';
         }
 
-        // 4. CRUD OPERATIONS
         async function saveEntry() {
             const name = document.getElementById('modalCustName').value;
             const type = document.getElementById('modalType').value;
             const qty = parseInt(document.getElementById('modalQty').value);
             const date = document.getElementById('modalDate').value;
             const ref = document.getElementById('modalRef').value.trim();
-
-            if (!qty || qty <= 0 || !date) return alert("Fill in quantity and date.");
-
+            if (!qty || !date) return alert("Qty and Date required.");
             setSyncStatus('syncing');
-            const { error: txErr } = await supabase.from('transactions').insert([{ customer: name, type, qty, date, reference: ref }]);
-            
+            await supabase.from('transactions').insert([{ customer: name, type, qty, date, reference: ref }]);
             const current = appData.customers[name];
-            const upd = { 
-                delivered: current.delivered + (type === 'Consumed' ? qty : 0), 
-                returned: current.returned + (type === 'Received' ? qty : 0) 
-            };
-            
+            const upd = { delivered: current.delivered + (type === 'Consumed' ? qty : 0), returned: current.returned + (type === 'Received' ? qty : 0) };
             await supabase.from('customers').update(upd).eq('name', name);
-            closeModal(); 
-            fetchData();
+            closeModal(); fetchData();
         }
 
         async function addCustomer() {
             const name = document.getElementById('newCustomerName').value.trim();
-            if (!name) return;
-            await supabase.from('customers').insert([{ name, delivered: 0, returned: 0 }]);
-            document.getElementById('newCustomerName').value = ''; 
-            fetchData();
+            if (name) { await supabase.from('customers').insert([{ name, delivered: 0, returned: 0 }]); fetchData(); }
         }
 
-        async function deleteCustomer(name) { 
-            if (confirm(`Delete ${name} and all its totals?`)) { 
-                await supabase.from('customers').delete().eq('name', name); 
-                fetchData(); 
-            } 
-        }
-
-        // 5. NAVIGATION & UTILITIES
-        function switchView(id, btn) { 
-            document.querySelectorAll('.view-section').forEach(v => v.style.display = 'none'); 
-            document.getElementById(id).style.display = 'block'; 
-            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active')); 
-            btn.classList.add('active'); 
-        }
-
-        function openModal(n) { 
-            document.getElementById('modalCustName').value = n; 
-            document.getElementById('modalDate').value = new Date().toISOString().split('T')[0]; 
-            document.getElementById('modalQty').value = ''; 
-            document.getElementById('modalRef').value = ''; 
-            document.getElementById('entryModal').style.display = 'flex'; 
-        }
-
+        async function deleteCustomer(name) { if (confirm(`Delete ${name}?`)) { await supabase.from('customers').delete().eq('name', name); fetchData(); } }
+        function switchView(id, btn) { document.querySelectorAll('.view-section').forEach(v => v.style.display = 'none'); document.getElementById(id).style.display = 'block'; document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); }
+        function openModal(n) { document.getElementById('modalCustName').value = n; document.getElementById('modalDate').value = new Date().toISOString().split('T')[0]; document.getElementById('entryModal').style.display = 'flex'; }
         function closeModal() { document.getElementById('entryModal').style.display = 'none'; }
         function setSyncStatus(s) { document.getElementById('syncStatus').innerHTML = s === 'syncing' ? '🔄 Syncing...' : '☁️ Cloud Connected'; }
-
         function exportToCSV() {
             let csv = "Date,Customer,Ref,Qty,Type\n";
-            appData.transactions.forEach(t => { 
-                csv += `${t.date},${t.customer},"${t.reference || ''}",${t.qty},${t.type}\n`; 
-            });
+            appData.transactions.forEach(t => { csv += `${t.date},${t.customer},${t.reference || ''},${t.qty},${t.type}\n`; });
             const blob = new Blob([csv], { type: 'text/csv' });
             const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a'); a.href = url; a.download = 'pallet_log_history.csv'; a.click();
+            const a = document.createElement('a'); a.href = url; a.download = 'log.csv'; a.click();
         }
     </script>
 </body>
