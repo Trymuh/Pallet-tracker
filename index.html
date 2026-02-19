@@ -14,48 +14,35 @@
     <style>
         :root { --primary: #ea580c; --danger: #e11d48; --dark: #0b0f19; --light: #f8fafc; --border: #e2e8f0; }
         body { margin: 0; font-family: 'Outfit', sans-serif; background: var(--light); height: 100vh; overflow: hidden; }
-        
-        /* Auth */
         #authGate { display: flex; align-items: center; justify-content: center; height: 100vh; background: var(--dark); z-index: 10000; position: relative; }
         .login-box { background: white; padding: 40px; border-radius: 20px; width: 340px; text-align: center; }
         .login-box input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid var(--border); border-radius: 8px; box-sizing: border-box; }
-        
-        /* Layout */
         #appShell { display: none; height: 100vh; flex-direction: row; }
         .sidebar { width: 260px; background: var(--dark); color: white; padding: 25px; display: flex; flex-direction: column; }
         .nav-item { padding: 12px; color: #94a3b8; cursor: pointer; border-radius: 8px; margin-bottom: 5px; font-weight: 600; }
         .nav-item.active { background: var(--primary); color: white; }
-        
         .main { flex: 1; padding: 40px; overflow-y: auto; }
         .hidden { display: none !important; }
-
-        /* Dashboard Components */
         .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 30px; }
-        .stat-card { background: white; padding: 20px; border-radius: 12px; border: 1px solid var(--border); transition: 0.3s; }
-        .stat-card.alert { border: 2px solid var(--danger); background: #fff1f2; animation: pulse 2s infinite; }
-        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(225, 29, 72, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(225, 29, 72, 0); } 100% { box-shadow: 0 0 0 0 rgba(225, 29, 72, 0); } }
-        
+        .stat-card { background: white; padding: 20px; border-radius: 12px; border: 1px solid var(--border); }
         .stat-card h4 { margin: 0; font-size: 0.75rem; color: #64748b; text-transform: uppercase; }
         .stat-card p { margin: 5px 0 0 0; font-size: 1.6rem; font-weight: 700; }
-
-        .chart-container { background: white; padding: 20px; border-radius: 16px; border: 1px solid var(--border); height: 300px; margin-bottom: 30px; }
-        
-        /* Tables */
+        .chart-container { background: white; padding: 20px; border-radius: 16px; border: 1px solid var(--border); height: 320px; margin-bottom: 30px; }
         .data-table { width: 100%; border-collapse: collapse; background: white; border-radius: 12px; border: 1px solid var(--border); }
         .data-table th { background: #f1f5f9; padding: 12px; text-align: left; font-size: 0.8rem; color: #64748b; }
         .data-table td { padding: 12px; border-top: 1px solid var(--border); font-size: 0.9rem; }
-
-        .btn { padding: 8px 16px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; font-family: inherit; transition: 0.2s; }
+        .badge { padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; text-transform: uppercase; }
+        .badge-chep { background: #005587; color: white; }
+        .badge-euro { background: #ffd700; color: black; }
+        .badge-std { background: #8b4513; color: white; }
+        .btn { padding: 8px 16px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; font-family: inherit; }
         .btn-primary { background: var(--primary); color: white; }
-        .btn-danger { background: #fee2e2; color: var(--danger); font-size: 0.75rem; }
+        .btn-danger { background: var(--danger); color: white; }
         .btn-outline { border: 1px solid var(--border); background: white; font-size: 0.75rem; }
-
         .modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); align-items:center; justify-content:center; z-index: 9999; }
         .modal-content { background:white; padding:30px; border-radius:16px; width:400px; }
-        
         .settings-box { margin-top:auto; padding:15px; background:#1e293b; border-radius:12px; font-size:0.8rem; }
-        .settings-box label { display: block; margin-bottom: 5px; color: #94a3b8; }
-        .settings-box input { width:100%; background:#0b0f19; border:1px solid #334155; color:white; padding:5px; border-radius:4px; margin-bottom:10px; }
+        .settings-box input { width:100%; background:#0b0f19; border:1px solid #334155; color:white; padding:5px; border-radius:4px; margin: 5px 0 10px 0; }
     </style>
 </head>
 <body>
@@ -78,10 +65,12 @@
             <div class="nav-item" onclick="switchView('logs', this)">Audit Trail</div>
             
             <div class="settings-box">
-                <label>Total Warehouse Start</label>
+                <label>Warehouse Start Stock</label>
                 <input type="number" id="baseStock" value="500" onchange="refreshData()">
-                <label>Low Alert Threshold</label>
+                <label>Low Stock Alert</label>
                 <input type="number" id="alertThreshold" value="150" onchange="refreshData()">
+                <hr style="border:0; border-top:1px solid #334155; margin:10px 0;">
+                <button class="btn btn-danger" style="width:100%; font-size:10px;" onclick="clearMovements()">Clear All Movements</button>
             </div>
             <button class="btn btn-outline" style="margin-top:15px; color:white; border-color:#334155;" onclick="handleLogout()">Sign Out</button>
         </div>
@@ -89,19 +78,15 @@
         <div class="main" id="view-dash">
             <h1>Warehouse Overview</h1>
             <div class="stats-grid">
-                <div class="stat-card" id="stockCard">
-                    <h4>Internal Stock</h4>
-                    <p id="stat-stock">0</p>
-                    <small id="stockWarning" style="color:var(--danger); display:none; font-weight:bold;">STOCK CRITICAL</small>
-                </div>
-                <div class="stat-card"><h4>Market Debt</h4><p id="stat-debt" style="color:var(--danger)">0</p></div>
-                <div class="stat-card"><h4>Active Clients</h4><p id="stat-cust">0</p></div>
-                <div class="stat-card"><h4>Pallets Outbound</h4><p id="stat-flow">0</p></div>
+                <div class="stat-card" id="stockCard"><h4>Internal Stock</h4><p id="stat-stock">0</p></div>
+                <div class="stat-card"><h4>CHEP Debt</h4><p id="debt-chep" style="color:var(--primary)">0</p></div>
+                <div class="stat-card"><h4>Euro Debt</h4><p id="debt-euro" style="color:var(--primary)">0</p></div>
+                <div class="stat-card"><h4>Std Debt</h4><p id="debt-std" style="color:var(--primary)">0</p></div>
             </div>
             <div class="chart-container"><canvas id="debtChart"></canvas></div>
-            <h3>Direct Flow Logs</h3>
+            <h3>Active Balances</h3>
             <table class="data-table">
-                <thead><tr><th>Customer Name</th><th>Owed Balance</th><th style="text-align:right">Action</th></tr></thead>
+                <thead><tr><th>Customer</th><th>Main Type</th><th>Owed</th><th style="text-align:right">Action</th></tr></thead>
                 <tbody id="dashBody"></tbody>
             </table>
         </div>
@@ -111,12 +96,18 @@
             <div class="stat-card" style="margin-bottom:20px">
                 <h4>Add New Customer</h4>
                 <div style="display:flex; gap:10px; margin-top:10px;">
-                    <input type="text" id="newCustName" placeholder="Company Name" style="flex:1; padding:10px; border:1px solid var(--border); border-radius:8px;">
+                    <input type="text" id="newCustName" placeholder="Company Name" style="flex:2; padding:10px; border:1px solid var(--border); border-radius:8px;">
+                    <select id="newCustType" style="flex:1; border-radius:8px; border:1px solid var(--border); padding:10px;">
+                        <option value="CHEP">CHEP Only</option>
+                        <option value="Standard">Standard Only</option>
+                        <option value="Euro">Euro Only</option>
+                        <option value="Mixed">Mixed Types</option>
+                    </select>
                     <button class="btn btn-primary" onclick="addCustomer()">Register</button>
                 </div>
             </div>
             <table class="data-table">
-                <thead><tr><th>Name</th><th>Sent</th><th>Returned</th><th>Debt</th><th style="text-align:right">Actions</th></tr></thead>
+                <thead><tr><th>Name</th><th>Primary Type</th><th>CHEP</th><th>Euro</th><th>Std</th><th style="text-align:right">Report</th></tr></thead>
                 <tbody id="manageBody"></tbody>
             </table>
         </div>
@@ -124,13 +115,10 @@
         <div class="main hidden" id="view-logs">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
                 <h1>Transaction History</h1>
-                <button class="btn btn-primary" onclick="exportToCSV()">📥 Export All to CSV</button>
-            </div>
-            <div style="margin-bottom:20px;">
-                <input type="text" id="logSearch" placeholder="Filter by company..." style="padding:12px; width:300px; border-radius:8px; border:1px solid var(--border);" onkeyup="filterLogs()">
+                <button class="btn btn-primary" onclick="exportToCSV()">📥 Export CSV</button>
             </div>
             <table class="data-table">
-                <thead><tr><th>Date</th><th>Customer</th><th>Action</th><th>Qty</th><th>Admin</th></tr></thead>
+                <thead><tr><th>Date</th><th>Customer</th><th>Action</th><th>Type</th><th>Qty</th><th>Admin</th></tr></thead>
                 <tbody id="logsBody"></tbody>
             </table>
         </div>
@@ -138,15 +126,15 @@
 
     <div id="logModal" class="modal">
         <div class="modal-content">
-            <h3 id="modalTitle">Log Movement</h3>
+            <h3>Log Pallet Movement</h3>
             <input type="text" id="mCust" readonly style="background:#f1f5f9; border:none; padding:10px; width:100%; margin-bottom:15px; border-radius:8px; font-weight:bold;">
-            <label style="font-size: 0.75rem; color: #64748b;">Action</label>
-            <select id="mType" style="width:100%; padding:10px; margin-bottom:15px; border-radius:8px;"><option value="Consumed">Send Out (Consumed)</option><option value="Received">Receive (Returned)</option></select>
-            <input type="number" id="mQty" placeholder="Quantity" style="width:100%; padding:10px; margin-bottom:20px; border-radius:8px;">
-            <div style="display:flex; gap:10px;">
-                <button class="btn" onclick="closeModal()" style="flex:1; background:#eee">Cancel</button>
-                <button class="btn btn-primary" onclick="submitLog()" style="flex:2">Post Entry</button>
-            </div>
+            <label>Movement Type</label>
+            <select id="mAction" style="width:100%; padding:10px; margin-bottom:15px; border-radius:8px;"><option value="Consumed">Outgoing (Send)</option><option value="Received">Incoming (Return)</option></select>
+            <label>Pallet Category</label>
+            <select id="mType" style="width:100%; padding:10px; margin-bottom:15px; border-radius:8px;"><option value="CHEP">CHEP (Blue)</option><option value="Euro">Euro (Yellow)</option><option value="Standard">Standard (Brown)</option></select>
+            <label>Quantity</label>
+            <input type="number" id="mQty" placeholder="0" style="width:100%; padding:10px; margin-bottom:20px; border-radius:8px;">
+            <div style="display:flex; gap:10px;"><button class="btn" onclick="closeModal()" style="flex:1; background:#eee">Cancel</button><button class="btn btn-primary" onclick="submitLog()" style="flex:2">Post Entry</button></div>
         </div>
     </div>
 
@@ -156,14 +144,12 @@
         const _K = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InllaWlzaWxkZG1wZ3BodmN1cXhmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE0ODM4MjksImV4cCI6MjA4NzA1OTgyOX0.0f2xE3NqZm9QrWAlSi-AoLMWT4cqiArbY6VMt0KlHDA';
         const client = window.supabase.createClient(_U, _K);
         let myChart = null;
-        let globalLogs = []; // Store for CSV export
 
         window.handleLogin = async () => {
             const { error } = await client.auth.signInWithPassword({ email: document.getElementById('emailField').value, password: document.getElementById('passField').value });
             if (error) { document.getElementById('authError').innerText = error.message; document.getElementById('authError').style.display = 'block'; }
         };
         window.handleLogout = async () => { await client.auth.signOut(); };
-
         client.auth.onAuthStateChange((evt, session) => {
             document.getElementById('authGate').style.display = session ? 'none' : 'flex';
             document.getElementById('appShell').style.display = session ? 'flex' : 'none';
@@ -181,115 +167,82 @@
         window.refreshData = async () => {
             const { data: custs } = await client.from('customers').select('*').order('name');
             const { data: logs } = await client.from('transactions').select('*').order('date', {ascending: false});
-            globalLogs = logs || [];
-
-            const startStock = parseInt(document.getElementById('baseStock').value) || 0;
-            const threshold = parseInt(document.getElementById('alertThreshold').value) || 150;
             
-            let debt = 0, flowOut = 0, totalReturned = 0, labels = [], vals = [];
+            let tChep = 0, tEuro = 0, tStd = 0;
             const dBody = document.getElementById('dashBody'); dBody.innerHTML = '';
             const mBody = document.getElementById('manageBody'); mBody.innerHTML = '';
-            
-            custs.forEach(c => {
-                const b = (c.delivered || 0) - (c.returned || 0);
-                debt += b; flowOut += (c.delivered || 0); totalReturned += (c.returned || 0);
-                labels.push(c.name); vals.push(b);
-                dBody.innerHTML += `<tr><td><strong>${c.name}</strong></td><td>${b}</td><td style="text-align:right"><button class="btn btn-primary" style="padding:4px 10px; font-size:11px;" onclick="openModal('${c.name}')">Log Movement</button></td></tr>`;
-                mBody.innerHTML += `<tr><td>${c.name}</td><td>${c.delivered}</td><td>${c.returned}</td><td><strong>${b}</strong></td><td style="text-align:right"><button class="btn btn-outline" onclick="generatePDF('${c.name}')">Report</button></td></tr>`;
-            });
-
-            const internalStock = startStock + totalReturned - flowOut;
-            document.getElementById('stat-stock').innerText = internalStock;
-            
-            const stockCard = document.getElementById('stockCard');
-            const warning = document.getElementById('stockWarning');
-            if (internalStock < threshold) {
-                stockCard.classList.add('alert');
-                warning.style.display = 'block';
-            } else {
-                stockCard.classList.remove('alert');
-                warning.style.display = 'none';
-            }
-
-            document.getElementById('stat-debt').innerText = debt;
-            document.getElementById('stat-cust').innerText = custs.length;
-            document.getElementById('stat-flow').innerText = flowOut;
-
             const lBody = document.getElementById('logsBody'); lBody.innerHTML = '';
-            logs.forEach(l => {
-                lBody.innerHTML += `<tr data-name="${l.customer.toLowerCase()}">
-                    <td>${l.date}</td><td>${l.customer}</td>
-                    <td><span style="color:${l.type === 'Consumed' ? '#ea580c' : '#16a34a'}">${l.type}</span></td>
-                    <td>${l.qty}</td>
-                    <td><button class="btn btn-danger" onclick="deleteLog(${l.id}, '${l.customer}', '${l.type}', ${l.qty})">Delete</button></td>
-                </tr>`;
+
+            custs.forEach(c => {
+                const cLogs = logs.filter(l => l.customer === c.name);
+                const getBal = (type) => cLogs.filter(l => l.pallet_type === type).reduce((acc, curr) => acc + (curr.type === 'Consumed' ? curr.qty : -curr.qty), 0);
+                
+                const bChep = getBal('CHEP');
+                const bEuro = getBal('Euro');
+                const bStd = getBal('Standard');
+                const totalDebt = bChep + bEuro + bStd;
+                
+                tChep += bChep; tEuro += bEuro; tStd += bStd;
+
+                dBody.innerHTML += `<tr><td><strong>${c.name}</strong></td><td><span class="badge badge-${c.primary_type?.toLowerCase() || 'std'}">${c.primary_type || 'Mixed'}</span></td><td>${totalDebt}</td><td style="text-align:right"><button class="btn btn-primary" style="padding:4px 10px; font-size:11px;" onclick="openModal('${c.name}')">Log</button></td></tr>`;
+                mBody.innerHTML += `<tr><td>${c.name}</td><td>${c.primary_type}</td><td>${bChep}</td><td>${bEuro}</td><td>${bStd}</td><td style="text-align:right"><button class="btn btn-outline" onclick="generatePDF('${c.name}')">PDF</button></td></tr>`;
             });
-            if (typeof Chart !== 'undefined' && labels.length > 0) updateChart(labels, vals);
+
+            logs.forEach(l => {
+                lBody.innerHTML += `<tr><td>${l.date}</td><td>${l.customer}</td><td>${l.type}</td><td><span class="badge badge-${l.pallet_type?.toLowerCase()}">${l.pallet_type}</span></td><td>${l.qty}</td><td><button class="btn btn-danger" style="font-size:10px" onclick="deleteLog(${l.id})">Del</button></td></tr>`;
+            });
+
+            document.getElementById('debt-chep').innerText = tChep;
+            document.getElementById('debt-euro').innerText = tEuro;
+            document.getElementById('debt-std').innerText = tStd;
+            
+            const internal = (parseInt(document.getElementById('baseStock').value) || 0) - (tChep + tEuro + tStd);
+            document.getElementById('stat-stock').innerText = internal;
+
+            if (typeof Chart !== 'undefined') updateChart(['CHEP', 'Euro', 'Standard'], [tChep, tEuro, tStd]);
         };
 
-        window.exportToCSV = () => {
-            let csv = "Date,Customer,Type,Quantity\n";
-            globalLogs.forEach(l => { csv += `${l.date},${l.customer},${l.type},${l.qty}\n`; });
-            const blob = new Blob([csv], { type: 'text/csv' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.setAttribute('href', url);
-            a.setAttribute('download', `Pallet_Audit_${new Date().toLocaleDateString()}.csv`);
-            a.click();
-        };
-
-        window.generatePDF = async (name) => {
-            const { data: logs } = await client.from('transactions').select('*').eq('customer', name).order('date');
-            const { data: c } = await client.from('customers').select('*').eq('name', name).single();
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
-            doc.setFont("helvetica", "bold");
-            doc.text(`Pallet Statement: ${name}`, 14, 20);
-            doc.setFontSize(10);
-            doc.text(`Generated: ${new Date().toLocaleDateString()}`, 14, 26);
-            doc.text(`Outstanding Balance: ${(c.delivered - c.returned)} Pallets`, 14, 32);
-            doc.autoTable({ head: [['Date', 'Action', 'Quantity']], body: logs.map(l => [l.date, l.type, l.qty]), startY: 40, theme: 'striped' });
-            doc.save(`Statement_${name}.pdf`);
-        };
-
-        window.deleteLog = async (id, name, type, qty) => {
-            if(!confirm("Erase this record and revert balance?")) return;
-            await client.from('transactions').delete().eq('id', id);
-            const { data: c } = await client.from('customers').select('*').eq('name', name).single();
-            const up = type === 'Consumed' ? { delivered: c.delivered - qty } : { returned: c.returned - qty };
-            await client.from('customers').update(up).eq('name', name);
-            refreshData();
+        window.clearMovements = async () => {
+            if (confirm("DANGER: This will delete ALL transaction history and reset all balances to zero. This cannot be undone. Are you sure?")) {
+                // Delete all transactions
+                await client.from('transactions').delete().neq('qty', -1); // Deletes everything
+                // Reset customer counters
+                await client.from('customers').update({ delivered: 0, returned: 0 }).neq('name', 'none');
+                alert("All movements cleared.");
+                refreshData();
+            }
         };
 
         function updateChart(l, d) {
             const ctx = document.getElementById('debtChart').getContext('2d');
             if (myChart) myChart.destroy();
-            myChart = new Chart(ctx, { type: 'bar', data: { labels: l, datasets: [{ label: 'Owed', data: d, backgroundColor: '#ea580c', borderRadius: 6 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
+            myChart = new Chart(ctx, { type: 'bar', data: { labels: l, datasets: [{ data: d, backgroundColor: ['#005587', '#ffd700', '#8b4513'], borderRadius: 8 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
         }
-        window.openModal = (n) => { document.getElementById('mCust').value = n; document.getElementById('logModal').style.display = 'flex'; };
-        window.closeModal = () => { document.getElementById('logModal').style.display = 'none'; };
+
+        window.submitLog = async () => {
+            const entry = {
+                customer: document.getElementById('mCust').value,
+                type: document.getElementById('mAction').value,
+                pallet_type: document.getElementById('mType').value,
+                qty: parseInt(document.getElementById('mQty').value),
+                date: new Date().toISOString().split('T')[0]
+            };
+            if(!entry.qty) return;
+            await client.from('transactions').insert([entry]);
+            closeModal(); refreshData();
+        };
+
         window.addCustomer = async () => {
-            const name = document.getElementById('newCustName').value.trim();
-            if(!name) return;
-            await client.from('customers').insert([{ name, delivered: 0, returned: 0 }]);
+            const name = document.getElementById('newCustName').value;
+            const type = document.getElementById('newCustType').value;
+            await client.from('customers').insert([{ name, primary_type: type }]);
             document.getElementById('newCustName').value = '';
             refreshData();
         };
-        window.submitLog = async () => {
-            const name = document.getElementById('mCust').value;
-            const type = document.getElementById('mType').value;
-            const qty = parseInt(document.getElementById('mQty').value);
-            if(!qty) return;
-            await client.from('transactions').insert([{ customer: name, type, qty, date: new Date().toISOString().split('T')[0] }]);
-            const { data: c } = await client.from('customers').select('*').eq('name', name).single();
-            const up = type === 'Consumed' ? { delivered: (c.delivered || 0) + qty } : { returned: (c.returned || 0) + qty };
-            await client.from('customers').update(up).eq('name', name);
-            closeModal(); refreshData();
-        };
-        window.filterLogs = () => {
-            const val = document.getElementById('logSearch').value.toLowerCase();
-            document.querySelectorAll('#logsBody tr').forEach(tr => { tr.style.display = tr.dataset.name.includes(val) ? '' : 'none'; });
-        };
+
+        window.openModal = (n) => { document.getElementById('mCust').value = n; document.getElementById('logModal').style.display = 'flex'; };
+        window.closeModal = () => { document.getElementById('logModal').style.display = 'none'; };
+        window.deleteLog = async (id) => { if(confirm("Delete record?")) { await client.from('transactions').delete().eq('id', id); refreshData(); } };
     })();
     </script>
 </body>
