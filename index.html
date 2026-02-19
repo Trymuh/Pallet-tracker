@@ -233,35 +233,41 @@
 
     <script>
         // ==========================================
-        // 1. FIREWALL-PROOF SUPABASE SETUP
+        // 1. SUPABASE SETUP & CONFIGURATION
         // ==========================================
         
         const supabaseUrl = 'https://yeiisilddmpgphvcuqxf.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InllaWlzaWxkZG1wZ3BodmN1cXhmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE0ODM4MjksImV4cCI6MjA4NzA1OTgyOX0.0f2xE3NqZm9QrWAlSi-AoLMWT4cqiArbY6VMt0KlHDA';
 
-        // RENAMED FROM 'supabase' TO 'supabaseClient' TO FIX THE CRASH
         let supabaseClient = null;
         let isDatabaseActive = false;
+        let isOfflineAdmin = false; // Tracks if we are in fallback mode
+        
+        // This holds the data so the charts can read it easily
+        let appData = { customers: {}, transactions: [] };
 
+        // Try to connect to Supabase
         try {
             if (window.supabase) {
-                // Initialize using the new name
                 supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
                 isDatabaseActive = true;
                 
                 supabaseClient.auth.onAuthStateChange((event, session) => {
                     if (session && session.user) {
+                        isOfflineAdmin = false;
                         document.getElementById('loginScreen').style.display = 'none';
                         document.getElementById('mainApp').style.display = 'flex';
                         document.getElementById('userDisplay').innerText = "👤 " + session.user.email;
-                        updateEntireDashboard();
+                        
+                        // FETCH CLOUD DATA ON LOGIN
+                        fetchSupabaseData();
                     } else {
                         document.getElementById('mainApp').style.display = 'none';
                         document.getElementById('loginScreen').style.display = 'flex';
                     }
                 });
             } else {
-                throw new Error("Supabase Library Blocked by Firewall");
+                throw new Error("Supabase Blocked by Firewall");
             }
         } catch (error) {
             console.warn(error.message);
@@ -269,9 +275,34 @@
         }
 
         // ==========================================
-        // 2. LOGIN / LOGOUT LOGIC
+        // 2. CLOUD DATA FETCHING (NEW!)
         // ==========================================
-        
+        async function fetchSupabaseData() {
+            // 1. Pull Customers table
+            const { data: custData, error: custErr } = await supabaseClient.from('customers').select('*');
+            // 2. Pull Transactions table
+            const { data: transData, error: transErr } = await supabaseClient.from('transactions').select('*').order('id', { ascending: false });
+            
+            if (custErr || transErr) {
+                console.error("Cloud Error:", custErr, transErr);
+                alert("Failed to sync with the cloud.");
+                return;
+            }
+
+            // Repackage the data into our appData object so the UI can read it
+            appData.customers = {};
+            custData.forEach(c => {
+                appData.customers[c.name] = { delivered: c.delivered, returned: c.returned };
+            });
+            appData.transactions = transData; 
+
+            // Tell the UI to redraw using the fresh cloud data
+            updateEntireDashboard();
+        }
+
+        // ==========================================
+        // 3. LOGIN / LOGOUT
+        // ==========================================
         async function attemptLogin() {
             const email = document.getElementById('loginUsername').value;
             const pass = document.getElementById('loginPassword').value;
@@ -281,11 +312,8 @@
             btn.innerText = "Signing in...";
 
             if (isDatabaseActive) {
-                // REAL LOGIN (Uses new variable name)
-                const { data, error } = await supabaseClient.auth.signInWithPassword({
-                    email: email,
-                    password: pass,
-                });
+                // CLOUD LOGIN
+                const { data, error } = await supabaseClient.auth.signInWithPassword({ email: email, password: pass });
 
                 if (error) {
                     errorMsg.innerText = error.message;
@@ -296,16 +324,16 @@
                     btn.innerText = "Sign In";
                 }
             } else {
-                // FALLBACK LOGIN (For inside Iron Mountain)
+                // OFFLINE FALLBACK LOGIN
                 if ((email === 'admin' || email === 'admin@test.com') && pass === 'password123') {
+                    isOfflineAdmin = true;
                     document.getElementById('loginScreen').style.display = 'none';
                     document.getElementById('mainApp').style.display = 'flex';
                     document.getElementById('userDisplay').innerText = "👤 Offline Admin";
                     errorMsg.style.display = 'none';
                     
-                    setTimeout(() => {
-                        updateEntireDashboard();
-                    }, 100);
+                    loadOfflineData();
+                    setTimeout(() => { updateEntireDashboard(); }, 100);
                 } else {
                     errorMsg.innerText = "Offline Mode: Please use 'admin' and 'password123'";
                     errorMsg.style.display = 'block';
@@ -319,50 +347,110 @@
         });
 
         async function logout() {
-            if (isDatabaseActive) {
+            if (isDatabaseActive && !isOfflineAdmin) {
                 await supabaseClient.auth.signOut();
             } else {
                 document.getElementById('mainApp').style.display = 'none';
                 document.getElementById('loginScreen').style.display = 'flex';
                 document.getElementById('loginUsername').value = '';
                 document.getElementById('loginPassword').value = '';
+                isOfflineAdmin = false;
             }
         }
 
         // ==========================================
-        // 3. UI & DASHBOARD LOGIC 
+        // 4. DATA MODIFICATION (SAVE, ADD, DELETE)
         // ==========================================
-        let appData;
-        
-        try {
-            let savedData = localStorage.getItem('palletLogisticsDataV4'); 
-            if (savedData) { 
-                appData = JSON.parse(savedData); 
+        async function saveEntry() {
+            const name = document.getElementById('customerNameInput').value; 
+            const type = document.getElementById('transactionType').value;
+            const qty = parseInt(document.getElementById('quantityInput').value); 
+            const date = document.getElementById('transactionDate').value;
+            
+            if (!qty || qty <= 0) return alert("Enter a valid quantity."); 
+            if (!date) return alert("Please select a date.");
+
+            if (isOfflineAdmin) {
+                // OFFLINE MODE: Save locally
+                if (type === 'Delivery') { appData.customers[name].delivered += qty; } 
+                else if (type === 'Return') { appData.customers[name].returned += qty; }
+                appData.transactions.push({ date: date, customer: name, type: type, qty: qty });
+                saveDataToMemory(); 
+                updateEntireDashboard(); 
+                closeModal();
             } else {
-                throw new Error("No data found");
+                // CLOUD MODE: Send to Supabase
+                const btn = document.querySelector('.modal-content .btn:last-child');
+                btn.innerText = "Saving to Cloud...";
+
+                // 1. Insert Transaction Log
+                const { error: txError } = await supabaseClient.from('transactions').insert([{ date: date, customer: name, type: type, qty: qty }]);
+                
+                // 2. Update Customer Balance
+                let newDelivered = appData.customers[name].delivered + (type === 'Delivery' ? qty : 0);
+                let newReturned = appData.customers[name].returned + (type === 'Return' ? qty : 0);
+                
+                const { error: custError } = await supabaseClient.from('customers').update({ delivered: newDelivered, returned: newReturned }).eq('name', name);
+                
+                btn.innerText = "Save Entry";
+                
+                if (txError || custError) {
+                    alert("Cloud Error: Could not save data.");
+                } else {
+                    closeModal();
+                    await fetchSupabaseData(); // Re-download fresh numbers
+                }
             }
-        } catch (error) {
-            appData = {
-                customers: { 'Acme Manufacturing': { delivered: 120, returned: 50 }, 'BuildIt Supplies': { delivered: 40, returned: 10 } },
-                transactions: [
-                    { date: '2026-02-18', customer: 'Acme Manufacturing', type: 'Delivery', qty: 120 },
-                    { date: '2026-02-19', customer: 'Acme Manufacturing', type: 'Return', qty: 50 },
-                    { date: '2026-02-19', customer: 'BuildIt Supplies', type: 'Delivery', qty: 40 },
-                    { date: '2026-02-19', customer: 'BuildIt Supplies', type: 'Return', qty: 10 }
-                ]
-            };
-            saveDataToMemory();
         }
 
-        function saveDataToMemory() { 
-            localStorage.setItem('palletLogisticsDataV4', JSON.stringify(appData)); 
+        async function addCustomer() {
+            const name = document.getElementById('newCustomerName').value.trim();
+            if (!name) return alert("Please enter a customer name.");
+            if (appData.customers[name]) return alert("This customer already exists!");
+
+            if (isOfflineAdmin) {
+                appData.customers[name] = { delivered: 0, returned: 0 };
+                document.getElementById('newCustomerName').value = ''; 
+                saveDataToMemory(); updateEntireDashboard();
+            } else {
+                const { error } = await supabaseClient.from('customers').insert([{ name: name, delivered: 0, returned: 0 }]);
+                if (error) return alert("Cloud Error: " + error.message);
+                document.getElementById('newCustomerName').value = ''; 
+                await fetchSupabaseData();
+            }
         }
 
-        function toggleSidebar() { 
-            document.getElementById('sidebar').classList.toggle('active'); 
-            document.getElementById('sidebarOverlay').classList.toggle('active'); 
+        async function deleteCustomer(name) {
+            if (confirm(`Remove ${name}? Their totals will be erased.`)) {
+                if (isOfflineAdmin) {
+                    delete appData.customers[name]; 
+                    saveDataToMemory(); updateEntireDashboard();
+                } else {
+                    const { error } = await supabaseClient.from('customers').delete().eq('name', name);
+                    if (error) return alert("Cloud Error: " + error.message);
+                    await fetchSupabaseData();
+                }
+            }
         }
 
+        // ==========================================
+        // 5. OFFLINE STORAGE LOGIC (Fallback Only)
+        // ==========================================
+        function loadOfflineData() {
+            try {
+                let savedData = localStorage.getItem('palletLogisticsDataV4'); 
+                if (savedData) { appData = JSON.parse(savedData); } else { throw new Error("No data found"); }
+            } catch (error) {
+                appData = { customers: { 'Acme Manufacturing': { delivered: 120, returned: 50 }, 'BuildIt Supplies': { delivered: 40, returned: 10 } }, transactions: [] };
+                saveDataToMemory();
+            }
+        }
+        function saveDataToMemory() { localStorage.setItem('palletLogisticsDataV4', JSON.stringify(appData)); }
+
+        // ==========================================
+        // 6. UI RENDER ENGINE (Unchanged)
+        // ==========================================
+        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('active'); document.getElementById('sidebarOverlay').classList.toggle('active'); }
         function switchView(viewId, clickedButton) {
             document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
             document.getElementById(viewId).classList.add('active');
@@ -373,148 +461,57 @@
 
         let palletChart = null;
 
-        function updateEntireDashboard() { 
-            updateKPIs(); 
-            renderDashboardTable(); 
-            renderCustomersTable(); 
-            renderTransactionLogs(); 
-            renderChart(); 
-        }
-
+        function updateEntireDashboard() { updateKPIs(); renderDashboardTable(); renderCustomersTable(); renderTransactionLogs(); renderChart(); }
         function updateKPIs() {
             let totalDel = 0, totalRet = 0;
-            for (const key in appData.customers) { 
-                totalDel += appData.customers[key].delivered; 
-                totalRet += appData.customers[key].returned; 
-            }
+            for (const key in appData.customers) { totalDel += appData.customers[key].delivered; totalRet += appData.customers[key].returned; }
             const deficit = totalDel - totalRet;
             document.getElementById('kpi-total').innerText = (1000 + deficit).toLocaleString(); 
             document.getElementById('kpi-delivered').innerText = totalDel.toLocaleString();
             document.getElementById('kpi-returned').innerText = totalRet.toLocaleString();
             document.getElementById('kpi-deficit').innerText = deficit.toLocaleString();
         }
-
         function renderDashboardTable() {
-            const tbody = document.getElementById('ledgerTableBody');
-            if(!tbody) return;
-            tbody.innerHTML = '';
+            const tbody = document.getElementById('ledgerTableBody'); if(!tbody) return; tbody.innerHTML = '';
             for (const [customerName, data] of Object.entries(appData.customers)) {
                 const balance = data.delivered - data.returned;
                 let badgeHTML = balance === 0 ? '<span class="badge balanced">Balanced</span>' : (balance > 100 ? '<span class="badge overdue">Overdue</span>' : '<span class="badge healthy">Healthy</span>');
                 tbody.innerHTML += `<tr><td>${customerName}</td><td>${data.delivered}</td><td>${data.returned}</td><td>${balance}</td><td>${badgeHTML}</td><td><button class="btn inline" onclick="openModal('${customerName}')">Log New</button></td></tr>`;
             }
         }
-
         function renderCustomersTable() {
-            const tbody = document.getElementById('customersListBody'); 
-            if(!tbody) return;
-            tbody.innerHTML = '';
-            for (const customerName in appData.customers) { 
-                tbody.innerHTML += `<tr><td><strong>${customerName}</strong></td><td><button class="btn btn-danger inline" onclick="deleteCustomer('${customerName}')">Remove</button></td></tr>`; 
-            }
+            const tbody = document.getElementById('customersListBody'); if(!tbody) return; tbody.innerHTML = '';
+            for (const customerName in appData.customers) { tbody.innerHTML += `<tr><td><strong>${customerName}</strong></td><td><button class="btn btn-danger inline" onclick="deleteCustomer('${customerName}')">Remove</button></td></tr>`; }
         }
-
         function renderTransactionLogs() {
-            const delBody = document.getElementById('deliveriesTableBody'); 
-            const retBody = document.getElementById('returnsTableBody');
-            if(!delBody || !retBody) return;
-            delBody.innerHTML = ''; 
-            retBody.innerHTML = '';
-            for (let i = appData.transactions.length - 1; i >= 0; i--) {
+            const delBody = document.getElementById('deliveriesTableBody'); const retBody = document.getElementById('returnsTableBody');
+            if(!delBody || !retBody) return; delBody.innerHTML = ''; retBody.innerHTML = '';
+            for (let i = 0; i < appData.transactions.length; i++) { // Render forwards because Supabase sorts them newest first
                 const tx = appData.transactions[i];
                 const row = `<tr><td>${tx.date}</td><td><strong>${tx.customer}</strong></td><td>${tx.qty} Pallets</td><td><span class="badge ${tx.type.toLowerCase()}">${tx.type}</span></td></tr>`;
-                if (tx.type === 'Delivery') { delBody.innerHTML += row; } 
-                else if (tx.type === 'Return') { retBody.innerHTML += row; }
+                if (tx.type === 'Delivery') { delBody.innerHTML += row; } else if (tx.type === 'Return') { retBody.innerHTML += row; }
             }
         }
-
         function renderChart() {
-            const canvas = document.getElementById('palletChart');
-            if (!canvas) return;
-            
+            const canvas = document.getElementById('palletChart'); if (!canvas) return;
             const labels = Object.keys(appData.customers);
             const delData = labels.map(key => appData.customers[key].delivered);
             const retData = labels.map(key => appData.customers[key].returned);
-            
-            if (palletChart) { 
-                palletChart.destroy(); 
-            }
-            
+            if (palletChart) { palletChart.destroy(); }
             const ctx = canvas.getContext('2d');
-            palletChart = new Chart(ctx, {
-                type: 'bar',
-                data: { labels: labels, datasets: [
-                    { label: 'Delivered', data: delData, backgroundColor: '#3b82f6', borderRadius: 4 }, 
-                    { label: 'Returned', data: retData, backgroundColor: '#16a34a', borderRadius: 4 }
-                ]},
-                options: { responsive: true, maintainAspectRatio: false }
-            });
+            palletChart = new Chart(ctx, { type: 'bar', data: { labels: labels, datasets: [{ label: 'Delivered', data: delData, backgroundColor: '#3b82f6', borderRadius: 4 }, { label: 'Returned', data: retData, backgroundColor: '#16a34a', borderRadius: 4 }]}, options: { responsive: true, maintainAspectRatio: false }});
         }
-
-        function addCustomer() {
-            const name = document.getElementById('newCustomerName').value.trim();
-            if (!name) return alert("Please enter a customer name.");
-            if (appData.customers[name]) return alert("This customer already exists!");
-            appData.customers[name] = { delivered: 0, returned: 0 };
-            document.getElementById('newCustomerName').value = ''; 
-            saveDataToMemory(); 
-            updateEntireDashboard();
-        }
-
-        function deleteCustomer(name) {
-            if (confirm(`Remove ${name}? Their totals will be erased.`)) {
-                delete appData.customers[name]; 
-                saveDataToMemory(); 
-                updateEntireDashboard();
-            }
-        }
-
         function exportToCSV() {
-            const startDate = document.getElementById('reportStartDate').value; 
-            const endDate = document.getElementById('reportEndDate').value;
+            const startDate = document.getElementById('reportStartDate').value; const endDate = document.getElementById('reportEndDate').value;
             if(!startDate || !endDate) return alert("Please select a Start and End date.");
-            
             let csvContent = "Customer Name,Total Delivered,Total Returned,Current Pallet Balance\n";
-            for (const [name, data] of Object.entries(appData.customers)) { 
-                csvContent += `"${name}",${data.delivered},${data.returned},${data.delivered - data.returned}\n`; 
-            }
+            for (const [name, data] of Object.entries(appData.customers)) { csvContent += `"${name}",${data.delivered},${data.returned},${data.delivered - data.returned}\n`; }
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement("a"); 
-            link.href = URL.createObjectURL(blob); 
-            link.download = `Pallet_Report.csv`; 
-            link.click();
+            const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = `Pallet_Report.csv`; link.click();
         }
-
         const modal = document.getElementById('logModal');
-        
-        function openModal(customerName) {
-            document.getElementById('customerNameInput').value = customerName; 
-            document.getElementById('quantityInput').value = ''; 
-            document.getElementById('transactionDate').value = new Date().toISOString().split('T')[0]; 
-            modal.style.display = 'flex';
-        }
-
-        function closeModal() { 
-            modal.style.display = 'none'; 
-        }
-
-        function saveEntry() {
-            const name = document.getElementById('customerNameInput').value; 
-            const type = document.getElementById('transactionType').value;
-            const qty = parseInt(document.getElementById('quantityInput').value); 
-            const date = document.getElementById('transactionDate').value;
-            
-            if (!qty || qty <= 0) return alert("Enter a valid quantity."); 
-            if (!date) return alert("Please select a date.");
-            
-            if (type === 'Delivery') { appData.customers[name].delivered += qty; } 
-            else if (type === 'Return') { appData.customers[name].returned += qty; }
-            
-            appData.transactions.push({ date: date, customer: name, type: type, qty: qty });
-            saveDataToMemory(); 
-            updateEntireDashboard(); 
-            closeModal();
-        }
+        function openModal(customerName) { document.getElementById('customerNameInput').value = customerName; document.getElementById('quantityInput').value = ''; document.getElementById('transactionDate').value = new Date().toISOString().split('T')[0]; modal.style.display = 'flex'; }
+        function closeModal() { modal.style.display = 'none'; }
     </script>
 </body>
 </html>
