@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PalletTracker Pro - Login</title>
+    <title>PalletTracker Pro</title>
     
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
@@ -232,33 +232,26 @@
         // 1. SUPABASE SETUP & CONFIGURATION
         // ==========================================
         
-        // YOUR UNIQUE SUPABASE CREDENTIALS
         const supabaseUrl = 'https://yeiisilddmpgphvcuqxf.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InllaWlzaWxkZG1wZ3BodmN1cXhmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE0ODM4MjksImV4cCI6MjA4NzA1OTgyOX0.0f2xE3NqZm9QrWAlSi-AoLMWT4cqiArbY6VMt0KlHDA';
 
-        const usingRealSupabase = supabaseUrl !== 'YOUR_SUPABASE_URL';
+        // Initialize Supabase Client
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
         
-        let supabase;
-
-        if (usingRealSupabase) {
-            // Initialize Supabase Client
-            supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
-            
-            // Magic Listener: Watches for login/logout events automatically
-            supabase.auth.onAuthStateChange((event, session) => {
-                if (session && session.user) {
-                    // User successfully logged in!
-                    document.getElementById('loginScreen').style.display = 'none';
-                    document.getElementById('mainApp').style.display = 'flex';
-                    document.getElementById('userDisplay').innerText = "👤 " + session.user.email;
-                    updateEntireDashboard();
-                } else {
-                    // User logged out
-                    document.getElementById('mainApp').style.display = 'none';
-                    document.getElementById('loginScreen').style.display = 'flex';
-                }
-            });
-        }
+        // Magic Listener: Watches for login/logout events automatically
+        supabase.auth.onAuthStateChange((event, session) => {
+            if (session && session.user) {
+                // User successfully logged in!
+                document.getElementById('loginScreen').style.display = 'none';
+                document.getElementById('mainApp').style.display = 'flex';
+                document.getElementById('userDisplay').innerText = "👤 " + session.user.email;
+                updateEntireDashboard();
+            } else {
+                // User logged out
+                document.getElementById('mainApp').style.display = 'none';
+                document.getElementById('loginScreen').style.display = 'flex';
+            }
+        });
 
         // ==========================================
         // 2. LOGIN / LOGOUT LOGIC
@@ -272,34 +265,17 @@
 
             btn.innerText = "Signing in...";
 
-            if (usingRealSupabase) {
-                // REAL SUPABASE AUTHENTICATION
-                const { data, error } = await supabase.auth.signInWithPassword({
-                    email: email,
-                    password: pass,
-                });
+            const { data, error } = await supabase.auth.signInWithPassword({
+                email: email,
+                password: pass,
+            });
 
-                if (error) {
-                    errorMsg.innerText = error.message;
-                    errorMsg.style.display = 'block';
-                    btn.innerText = "Sign In";
-                } else {
-                    errorMsg.style.display = 'none';
-                    btn.innerText = "Sign In";
-                    // The onAuthStateChange listener above will handle showing the app
-                }
-
+            if (error) {
+                errorMsg.innerText = error.message;
+                errorMsg.style.display = 'block';
+                btn.innerText = "Sign In";
             } else {
-                // DUMMY FALLBACK (So your code doesn't break while you test)
-                if ((email === 'admin' || email === 'admin@test.com') && pass === 'password123') {
-                    document.getElementById('loginScreen').style.display = 'none';
-                    document.getElementById('mainApp').style.display = 'flex';
-                    errorMsg.style.display = 'none';
-                    updateEntireDashboard();
-                } else {
-                    errorMsg.innerText = "Fallback Mode: Use 'admin' and 'password123'";
-                    errorMsg.style.display = 'block';
-                }
+                errorMsg.style.display = 'none';
                 btn.innerText = "Sign In";
             }
         }
@@ -309,25 +285,29 @@
         });
 
         async function logout() {
-            if (usingRealSupabase) {
-                await supabase.auth.signOut(); // Supabase handles the redirect automatically via the listener above
-            } else {
-                document.getElementById('mainApp').style.display = 'none';
-                document.getElementById('loginScreen').style.display = 'flex';
-                document.getElementById('loginUsername').value = '';
-                document.getElementById('loginPassword').value = '';
-            }
+            await supabase.auth.signOut();
         }
 
         // ==========================================
-        // 3. UI & DASHBOARD LOGIC (Unchanged)
+        // 3. UI & DASHBOARD LOGIC (BULLETPROOF INIT)
         // ==========================================
         let appData;
-        let savedData = localStorage.getItem('palletLogisticsDataV2'); 
-        if (savedData) { appData = JSON.parse(savedData); } 
-        else {
+        
+        try {
+            // Force load Version 3 to bypass any corrupted data
+            let savedData = localStorage.getItem('palletLogisticsDataV3'); 
+            if (savedData) { 
+                appData = JSON.parse(savedData); 
+            } else {
+                throw new Error("No data found");
+            }
+        } catch (error) {
+            // Load clean default data
             appData = {
-                customers: { 'Acme Manufacturing': { delivered: 120, returned: 50 }, 'BuildIt Supplies': { delivered: 40, returned: 10 } },
+                customers: { 
+                    'Acme Manufacturing': { delivered: 120, returned: 50 }, 
+                    'BuildIt Supplies': { delivered: 40, returned: 10 } 
+                },
                 transactions: [
                     { date: '2026-02-18', customer: 'Acme Manufacturing', type: 'Delivery', qty: 120 },
                     { date: '2026-02-19', customer: 'Acme Manufacturing', type: 'Return', qty: 50 },
@@ -337,8 +317,16 @@
             };
             saveDataToMemory();
         }
-        function saveDataToMemory() { localStorage.setItem('palletLogisticsDataV2', JSON.stringify(appData)); }
-        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('active'); document.getElementById('sidebarOverlay').classList.toggle('active'); }
+
+        function saveDataToMemory() { 
+            localStorage.setItem('palletLogisticsDataV3', JSON.stringify(appData)); 
+        }
+
+        function toggleSidebar() { 
+            document.getElementById('sidebar').classList.toggle('active'); 
+            document.getElementById('sidebarOverlay').classList.toggle('active'); 
+        }
+
         function switchView(viewId, clickedButton) {
             document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
             document.getElementById(viewId).classList.add('active');
@@ -346,17 +334,30 @@
             clickedButton.classList.add('active');
             if (window.innerWidth <= 768) { toggleSidebar(); }
         }
+
         let palletChart;
-        function updateEntireDashboard() { updateKPIs(); renderDashboardTable(); renderCustomersTable(); renderTransactionLogs(); renderChart(); }
+
+        function updateEntireDashboard() { 
+            updateKPIs(); 
+            renderDashboardTable(); 
+            renderCustomersTable(); 
+            renderTransactionLogs(); 
+            renderChart(); 
+        }
+
         function updateKPIs() {
             let totalDel = 0, totalRet = 0;
-            for (const key in appData.customers) { totalDel += appData.customers[key].delivered; totalRet += appData.customers[key].returned; }
+            for (const key in appData.customers) { 
+                totalDel += appData.customers[key].delivered; 
+                totalRet += appData.customers[key].returned; 
+            }
             const deficit = totalDel - totalRet;
             document.getElementById('kpi-total').innerText = (1000 + deficit).toLocaleString(); 
             document.getElementById('kpi-delivered').innerText = totalDel.toLocaleString();
             document.getElementById('kpi-returned').innerText = totalRet.toLocaleString();
             document.getElementById('kpi-deficit').innerText = deficit.toLocaleString();
         }
+
         function renderDashboardTable() {
             const tbody = document.getElementById('ledgerTableBody');
             tbody.innerHTML = '';
@@ -366,19 +367,27 @@
                 tbody.innerHTML += `<tr><td>${customerName}</td><td>${data.delivered}</td><td>${data.returned}</td><td>${balance}</td><td>${badgeHTML}</td><td><button class="btn inline" onclick="openModal('${customerName}')">Log New</button></td></tr>`;
             }
         }
+
         function renderCustomersTable() {
             const tbody = document.getElementById('customersListBody'); tbody.innerHTML = '';
-            for (const customerName in appData.customers) { tbody.innerHTML += `<tr><td><strong>${customerName}</strong></td><td><button class="btn btn-danger inline" onclick="deleteCustomer('${customerName}')">Remove</button></td></tr>`; }
+            for (const customerName in appData.customers) { 
+                tbody.innerHTML += `<tr><td><strong>${customerName}</strong></td><td><button class="btn btn-danger inline" onclick="deleteCustomer('${customerName}')">Remove</button></td></tr>`; 
+            }
         }
+
         function renderTransactionLogs() {
-            const delBody = document.getElementById('deliveriesTableBody'); const retBody = document.getElementById('returnsTableBody');
-            delBody.innerHTML = ''; retBody.innerHTML = '';
+            const delBody = document.getElementById('deliveriesTableBody'); 
+            const retBody = document.getElementById('returnsTableBody');
+            delBody.innerHTML = ''; 
+            retBody.innerHTML = '';
             for (let i = appData.transactions.length - 1; i >= 0; i--) {
                 const tx = appData.transactions[i];
                 const row = `<tr><td>${tx.date}</td><td><strong>${tx.customer}</strong></td><td>${tx.qty} Pallets</td><td><span class="badge ${tx.type.toLowerCase()}">${tx.type}</span></td></tr>`;
-                if (tx.type === 'Delivery') { delBody.innerHTML += row; } else if (tx.type === 'Return') { retBody.innerHTML += row; }
+                if (tx.type === 'Delivery') { delBody.innerHTML += row; } 
+                else if (tx.type === 'Return') { retBody.innerHTML += row; }
             }
         }
+
         function renderChart() {
             const labels = Object.keys(appData.customers);
             const delData = labels.map(key => appData.customers[key].delivered);
@@ -394,40 +403,70 @@
                 options: { responsive: true, maintainAspectRatio: false }
             });
         }
+
         function addCustomer() {
             const name = document.getElementById('newCustomerName').value.trim();
             if (!name) return alert("Please enter a customer name.");
             if (appData.customers[name]) return alert("This customer already exists!");
             appData.customers[name] = { delivered: 0, returned: 0 };
             document.getElementById('newCustomerName').value = ''; 
-            saveDataToMemory(); updateEntireDashboard();
+            saveDataToMemory(); 
+            updateEntireDashboard();
         }
+
         function deleteCustomer(name) {
             if (confirm(`Remove ${name}? Their totals will be erased.`)) {
-                delete appData.customers[name]; saveDataToMemory(); updateEntireDashboard();
+                delete appData.customers[name]; 
+                saveDataToMemory(); 
+                updateEntireDashboard();
             }
         }
+
         function exportToCSV() {
-            const startDate = document.getElementById('reportStartDate').value; const endDate = document.getElementById('reportEndDate').value;
+            const startDate = document.getElementById('reportStartDate').value; 
+            const endDate = document.getElementById('reportEndDate').value;
             if(!startDate || !endDate) return alert("Please select a Start and End date.");
+            
             let csvContent = "Customer Name,Total Delivered,Total Returned,Current Pallet Balance\n";
-            for (const [name, data] of Object.entries(appData.customers)) { csvContent += `"${name}",${data.delivered},${data.returned},${data.delivered - data.returned}\n`; }
+            for (const [name, data] of Object.entries(appData.customers)) { 
+                csvContent += `"${name}",${data.delivered},${data.returned},${data.delivered - data.returned}\n`; 
+            }
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = `Pallet_Report.csv`; link.click();
+            const link = document.createElement("a"); 
+            link.href = URL.createObjectURL(blob); 
+            link.download = `Pallet_Report.csv`; 
+            link.click();
         }
+
         const modal = document.getElementById('logModal');
+        
         function openModal(customerName) {
-            document.getElementById('customerNameInput').value = customerName; document.getElementById('quantityInput').value = ''; 
-            document.getElementById('transactionDate').value = new Date().toISOString().split('T')[0]; modal.style.display = 'flex';
+            document.getElementById('customerNameInput').value = customerName; 
+            document.getElementById('quantityInput').value = ''; 
+            document.getElementById('transactionDate').value = new Date().toISOString().split('T')[0]; 
+            modal.style.display = 'flex';
         }
-        function closeModal() { modal.style.display = 'none'; }
+
+        function closeModal() { 
+            modal.style.display = 'none'; 
+        }
+
         function saveEntry() {
-            const name = document.getElementById('customerNameInput').value; const type = document.getElementById('transactionType').value;
-            const qty = parseInt(document.getElementById('quantityInput').value); const date = document.getElementById('transactionDate').value;
-            if (!qty || qty <= 0) return alert("Enter a valid quantity."); if (!date) return alert("Please select a date.");
-            if (type === 'Delivery') { appData.customers[name].delivered += qty; } else if (type === 'Return') { appData.customers[name].returned += qty; }
+            const name = document.getElementById('customerNameInput').value; 
+            const type = document.getElementById('transactionType').value;
+            const qty = parseInt(document.getElementById('quantityInput').value); 
+            const date = document.getElementById('transactionDate').value;
+            
+            if (!qty || qty <= 0) return alert("Enter a valid quantity."); 
+            if (!date) return alert("Please select a date.");
+            
+            if (type === 'Delivery') { appData.customers[name].delivered += qty; } 
+            else if (type === 'Return') { appData.customers[name].returned += qty; }
+            
             appData.transactions.push({ date: date, customer: name, type: type, qty: qty });
-            saveDataToMemory(); updateEntireDashboard(); closeModal();
+            saveDataToMemory(); 
+            updateEntireDashboard(); 
+            closeModal();
         }
     </script>
 </body>
