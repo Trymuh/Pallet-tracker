@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PalletTracker Pro | Official Ledger</title>
+    <title>PalletTracker Pro | Live Warehouse Ledger</title>
     
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
@@ -20,9 +20,11 @@
         .flex-between { display: flex; justify-content: space-between; align-items: center; }
         .text-muted { color: #64748b; font-size: 0.9rem; }
 
+        /* Login screen styling */
         #loginScreen { display: flex; align-items: center; justify-content: center; width: 100vw; height: 100vh; background-color: var(--sidebar-bg); }
         .login-card { background: white; padding: 40px; border-radius: 16px; width: 100%; max-width: 400px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); }
         
+        /* App layout styling */
         #mainApp { display: none; width: 100%; height: 100vh; } 
         .sidebar { width: 260px; background-color: var(--sidebar-bg); color: white; padding: 24px; display: flex; flex-direction: column; flex-shrink: 0; }
         .brand-logo { display: flex; align-items: center; gap: 12px; margin-bottom: 40px; font-size: 1.4rem; font-weight: 700; border-bottom: 1px solid #1e293b; padding-bottom: 20px;}
@@ -33,8 +35,8 @@
         .nav-btn.active { color: white; background-color: var(--primary); font-weight: 600; }
 
         .main-content { flex-grow: 1; padding: 30px 50px; overflow-y: auto; background: var(--bg-color); }
-        header { margin-bottom: 30px; }
 
+        /* Dashboard components */
         .kpi-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 24px; margin-bottom: 40px; }
         .card { background: var(--card-bg); padding: 24px; border-radius: 16px; border: 1px solid var(--border); box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
         .card h3 { margin: 0 0 8px 0; font-size: 0.85rem; color: #64748b; text-transform: uppercase; letter-spacing: 1px; }
@@ -45,7 +47,7 @@
         th { background: #f8fafc; padding: 16px; text-align: left; font-size: 0.85rem; color: #64748b; border-bottom: 1px solid var(--border); }
         td { padding: 16px; border-bottom: 1px solid #f1f5f9; font-size: 0.95rem; }
 
-        .badge { padding: 4px 12px; border-radius: 99px; font-size: 0.75rem; font-weight: 700; display: inline-block;}
+        .badge { padding: 4px 12px; border-radius: 99px; font-size: 0.75rem; font-weight: 700; display: inline-block; }
         .badge-consumed { background: #dbeafe; color: #1e40af; }
         .badge-received { background: #dcfce7; color: #166534; }
         .badge-warning { background: #fee2e2; color: #991b1b; }
@@ -55,6 +57,7 @@
         .btn-primary:hover { background: var(--primary-hover); }
         .btn-outline { background: white; border: 1px solid var(--border); color: var(--text-main); }
 
+        /* Modal styling */
         .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); align-items: center; justify-content: center; z-index: 100; }
         .modal { background: white; width: 100%; max-width: 450px; border-radius: 20px; padding: 32px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
         .form-group { margin-bottom: 20px; }
@@ -96,13 +99,13 @@
         <main class="main-content">
             <div id="dashboardView" class="view-section active">
                 <header>
-                    <h1 style="margin:0">Overview</h1>
-                    <p class="text-muted">Global Pallet Balances</p>
+                    <h1 style="margin:0">Global Balance</h1>
+                    <p class="text-muted">Real-time pallet circulation</p>
                 </header>
                 <div class="kpi-container">
                     <div class="card"><h3>Active Debt</h3><p id="kpi-deficit">0</p></div>
-                    <div class="card"><h3>Total Consumed</h3><p id="kpi-consumed">0</p></div>
-                    <div class="card"><h3>Total Received</h3><p id="kpi-received">0</p></div>
+                    <div class="card"><h3>Consumed (Total)</h3><p id="kpi-consumed">0</p></div>
+                    <div class="card"><h3>Received (Total)</h3><p id="kpi-received">0</p></div>
                 </div>
                 <div class="table-container">
                     <table>
@@ -113,28 +116,28 @@
             </div>
 
             <div id="customersView" class="view-section" style="display:none">
-                <header><h1>Customer Directory</h1></header>
+                <header><h1>Manage Directory</h1></header>
                 <div class="card" style="margin-bottom: 30px;">
                     <div class="flex-between" style="gap:15px">
-                        <input type="text" id="newCustomerName" placeholder="Add new company name..." style="flex-grow:1; padding: 12px; border-radius: 8px; border:1px solid var(--border); font-family: inherit;">
-                        <button class="btn btn-primary" onclick="addCustomer()">+ Add Customer</button>
+                        <input type="text" id="newCustomerName" placeholder="New company name..." style="flex-grow:1; padding: 12px; border-radius: 8px; border:1px solid var(--border); font-family: inherit;">
+                        <button class="btn btn-primary" onclick="addCustomer()">Add Customer</button>
                     </div>
                 </div>
-                <div class="table-container"><table><thead><tr><th>Name</th><th style="text-align: right;">Action</th></tr></thead><tbody id="customerListBody"></tbody></table></div>
+                <div class="table-container"><table><thead><tr><th>Company Name</th><th style="text-align: right;">Action</th></tr></thead><tbody id="customerListBody"></tbody></table></div>
             </div>
 
             <div id="logView" class="view-section" style="display:none">
                 <header class="flex-between">
-                    <h1>Transaction Log</h1>
+                    <h1>Movement History</h1>
                     <button class="btn btn-outline" onclick="exportToCSV()">📥 Export CSV</button>
                 </header>
-                <input type="text" class="search-input" id="logSearch" placeholder="Search by customer or ref number..." onkeyup="filterLog()">
+                <input type="text" class="search-input" id="logSearch" placeholder="Search by company or order reference..." onkeyup="filterLog()">
                 <div class="table-container">
                     <table>
                         <thead><tr><th>Date</th><th>Customer</th><th>Ref #</th><th>Quantity</th><th>Type</th></tr></thead>
                         <tbody id="historyTableBody"></tbody>
                     </table>
-                    <div id="noResults" style="display:none; padding: 40px; text-align: center; color: #94a3b8;">No matches found.</div>
+                    <div id="noResults" style="display:none; padding: 40px; text-align: center; color: #94a3b8;">No movements found for that search.</div>
                 </div>
             </div>
         </main>
@@ -142,60 +145,97 @@
 
     <div class="modal-overlay" id="entryModal">
         <div class="modal">
-            <h2 style="margin-top:0">Log Pallet Flow</h2>
+            <h2 style="margin-top:0">Log Movement</h2>
             <div class="form-group"><label>Customer</label><input type="text" id="modalCustName" readonly></div>
-            <div class="form-group"><label>Type</label><select id="modalType"><option value="Consumed">Pallets Consumed (Delivery)</option><option value="Received">Pallets Received (Return)</option></select></div>
-            <div class="form-group"><label>Order Ref / Delivery Note</label><input type="text" id="modalRef" placeholder="e.g. #SF-991"></div>
+            <div class="form-group">
+                <label>Type</label>
+                <select id="modalType">
+                    <option value="Consumed">Pallets Consumed (Delivery)</option>
+                    <option value="Received">Pallets Received (Return)</option>
+                </select>
+            </div>
+            <div class="form-group"><label>Order Reference / Delivery Note</label><input type="text" id="modalRef" placeholder="e.g. #PO-1234"></div>
             <div class="form-group"><label>Quantity</label><input type="number" id="modalQty" min="1" placeholder="0"></div>
             <div class="form-group"><label>Date</label><input type="date" id="modalDate"></div>
             <div class="flex-between" style="margin-top: 30px;">
                 <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
-                <button class="btn btn-primary" onclick="saveEntry()">Save Entry</button>
+                <button class="btn btn-primary" onclick="saveEntry()">Confirm & Save</button>
             </div>
         </div>
     </div>
 
     <script>
+        // 1. SUPABASE CONNECTION (DECLARED ONCE)
         const supabaseUrl = 'https://yeiisilddmpgphvcuqxf.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InllaWlzaWxkZG1wZ3BodmN1cXhmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE0ODM4MjksImV4cCI6MjA4NzA1OTgyOX0.0f2xE3NqZm9QrWAlSi-AoLMWT4cqiArbY6VMt0KlHDA';
         const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
         let appData = { customers: {}, transactions: [] };
 
+        // 2. AUTHENTICATION LOGIC
         supabase.auth.onAuthStateChange((e, s) => {
-            if (s) { document.getElementById('loginScreen').style.display = 'none'; document.getElementById('mainApp').style.display = 'flex'; fetchData(); } 
-            else { document.getElementById('loginScreen').style.display = 'flex'; document.getElementById('mainApp').style.display = 'none'; }
+            if (s) { 
+                document.getElementById('loginScreen').style.display = 'none'; 
+                document.getElementById('mainApp').style.display = 'flex'; 
+                fetchData(); 
+            } else { 
+                document.getElementById('loginScreen').style.display = 'flex'; 
+                document.getElementById('mainApp').style.display = 'none'; 
+            }
         });
 
         async function attemptLogin() {
             const email = document.getElementById('loginUsername').value;
             const password = document.getElementById('loginPassword').value;
             const { error } = await supabase.auth.signInWithPassword({ email, password });
-            if (error) { document.getElementById('loginError').innerText = error.message; document.getElementById('loginError').style.display = 'block'; }
+            if (error) { 
+                const errBox = document.getElementById('loginError');
+                errBox.innerText = error.message; 
+                errBox.style.display = 'block'; 
+            }
         }
 
         async function logout() { await supabase.auth.signOut(); }
 
+        // 3. DATA MANAGEMENT
         async function fetchData() {
             setSyncStatus('syncing');
             const { data: custs } = await supabase.from('customers').select('*').order('name');
-            const { data: trans } = await supabase.from('transactions').select('*').order('date', { ascending: false }).limit(500);
-            appData.customers = {}; custs.forEach(c => appData.customers[c.name] = c);
+            const { data: trans } = await supabase.from('transactions').select('*').order('date', { ascending: false }).limit(1000);
+            
+            appData.customers = {}; 
+            custs.forEach(c => appData.customers[c.name] = c);
             appData.transactions = trans;
-            renderAll(); setSyncStatus('connected');
+            
+            renderAll(); 
+            setSyncStatus('connected');
         }
 
-        function renderAll() { renderDashboard(); renderCustomerList(); renderHistory(); }
+        function renderAll() { 
+            renderDashboard(); 
+            renderCustomerList(); 
+            renderHistory(); 
+        }
 
         function renderDashboard() {
             const tbody = document.getElementById('ledgerTableBody'); tbody.innerHTML = '';
             let totalC = 0, totalR = 0;
+            
             Object.values(appData.customers).forEach(c => {
                 totalC += c.delivered; totalR += c.returned;
                 const bal = c.delivered - c.returned;
-                tbody.innerHTML += `<tr><td><strong>${c.name}</strong></td><td>${c.delivered}</td><td>${c.returned}</td><td><span class="badge ${bal > 0 ? 'badge-warning' : 'badge-received'}">${bal}</span></td><td><button class="btn btn-outline" style="padding: 6px 12px; font-size:0.8rem" onclick="openModal('${c.name}')">Log Flow</button></td></tr>`;
+                tbody.innerHTML += `
+                    <tr>
+                        <td><strong>${c.name}</strong></td>
+                        <td>${c.delivered}</td>
+                        <td>${c.returned}</td>
+                        <td><span class="badge ${bal > 0 ? 'badge-warning' : 'badge-received'}">${bal}</span></td>
+                        <td><button class="btn btn-outline" style="padding: 6px 12px; font-size:0.8rem" onclick="openModal('${c.name}')">Log Flow</button></td>
+                    </tr>`;
             });
-            document.getElementById('kpi-consumed').innerText = totalC; document.getElementById('kpi-received').innerText = totalR; document.getElementById('kpi-deficit').innerText = totalC - totalR;
+            document.getElementById('kpi-consumed').innerText = totalC; 
+            document.getElementById('kpi-received').innerText = totalR; 
+            document.getElementById('kpi-deficit').innerText = totalC - totalR;
         }
 
         function renderCustomerList() {
@@ -207,6 +247,10 @@
 
         function renderHistory() {
             const tbody = document.getElementById('historyTableBody'); tbody.innerHTML = '';
+            if (appData.transactions.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:30px; color:#94a3b8">No records yet.</td></tr>';
+                return;
+            }
             appData.transactions.forEach(t => {
                 const isC = t.type === 'Consumed';
                 const ref = t.reference || '<span style="color:#cbd5e1">N/A</span>';
@@ -226,39 +270,72 @@
             document.getElementById('noResults').style.display = anyFound ? 'none' : 'block';
         }
 
+        // 4. CRUD OPERATIONS
         async function saveEntry() {
             const name = document.getElementById('modalCustName').value;
             const type = document.getElementById('modalType').value;
             const qty = parseInt(document.getElementById('modalQty').value);
             const date = document.getElementById('modalDate').value;
             const ref = document.getElementById('modalRef').value.trim();
-            if (!qty || qty <= 0 || !date) return alert("Missing quantity or date.");
+
+            if (!qty || qty <= 0 || !date) return alert("Fill in quantity and date.");
+
             setSyncStatus('syncing');
             const { error: txErr } = await supabase.from('transactions').insert([{ customer: name, type, qty, date, reference: ref }]);
+            
             const current = appData.customers[name];
-            const upd = { delivered: current.delivered + (type === 'Consumed' ? qty : 0), returned: current.returned + (type === 'Received' ? qty : 0) };
+            const upd = { 
+                delivered: current.delivered + (type === 'Consumed' ? qty : 0), 
+                returned: current.returned + (type === 'Received' ? qty : 0) 
+            };
+            
             await supabase.from('customers').update(upd).eq('name', name);
-            closeModal(); fetchData();
+            closeModal(); 
+            fetchData();
         }
 
         async function addCustomer() {
             const name = document.getElementById('newCustomerName').value.trim();
             if (!name) return;
             await supabase.from('customers').insert([{ name, delivered: 0, returned: 0 }]);
-            document.getElementById('newCustomerName').value = ''; fetchData();
+            document.getElementById('newCustomerName').value = ''; 
+            fetchData();
         }
 
-        async function deleteCustomer(name) { if (confirm(`Delete ${name}?`)) { await supabase.from('customers').delete().eq('name', name); fetchData(); } }
-        function switchView(id, btn) { document.querySelectorAll('.view-section').forEach(v => v.style.display = 'none'); document.getElementById(id).style.display = 'block'; document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); }
-        function openModal(n) { document.getElementById('modalCustName').value = n; document.getElementById('modalDate').value = new Date().toISOString().split('T')[0]; document.getElementById('modalQty').value = ''; document.getElementById('modalRef').value = ''; document.getElementById('entryModal').style.display = 'flex'; }
+        async function deleteCustomer(name) { 
+            if (confirm(`Delete ${name} and all its totals?`)) { 
+                await supabase.from('customers').delete().eq('name', name); 
+                fetchData(); 
+            } 
+        }
+
+        // 5. NAVIGATION & UTILITIES
+        function switchView(id, btn) { 
+            document.querySelectorAll('.view-section').forEach(v => v.style.display = 'none'); 
+            document.getElementById(id).style.display = 'block'; 
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active')); 
+            btn.classList.add('active'); 
+        }
+
+        function openModal(n) { 
+            document.getElementById('modalCustName').value = n; 
+            document.getElementById('modalDate').value = new Date().toISOString().split('T')[0]; 
+            document.getElementById('modalQty').value = ''; 
+            document.getElementById('modalRef').value = ''; 
+            document.getElementById('entryModal').style.display = 'flex'; 
+        }
+
         function closeModal() { document.getElementById('entryModal').style.display = 'none'; }
         function setSyncStatus(s) { document.getElementById('syncStatus').innerHTML = s === 'syncing' ? '🔄 Syncing...' : '☁️ Cloud Connected'; }
+
         function exportToCSV() {
             let csv = "Date,Customer,Ref,Qty,Type\n";
-            appData.transactions.forEach(t => { csv += `${t.date},${t.customer},"${t.reference || ''}",${t.qty},${t.type}\n`; });
+            appData.transactions.forEach(t => { 
+                csv += `${t.date},${t.customer},"${t.reference || ''}",${t.qty},${t.type}\n`; 
+            });
             const blob = new Blob([csv], { type: 'text/csv' });
             const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a'); a.href = url; a.download = 'pallet_history.csv'; a.click();
+            const a = document.createElement('a'); a.href = url; a.download = 'pallet_log_history.csv'; a.click();
         }
     </script>
 </body>
