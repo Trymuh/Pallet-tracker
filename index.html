@@ -34,10 +34,10 @@
         .badge { padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; text-transform: uppercase; }
         .badge-chep { background: #005587; color: white; }
         .badge-euro { background: #ffd700; color: black; }
-        .badge-std { background: #8b4513; color: white; }
+        .badge-standard { background: #8b4513; color: white; }
+        .badge-mixed { background: #64748b; color: white; }
         .btn { padding: 8px 16px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; font-family: inherit; }
         .btn-primary { background: var(--primary); color: white; }
-        .btn-danger { background: var(--danger); color: white; }
         .btn-outline { border: 1px solid var(--border); background: white; font-size: 0.75rem; }
         .modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); align-items:center; justify-content:center; z-index: 9999; }
         .modal-content { background:white; padding:30px; border-radius:16px; width:400px; }
@@ -70,7 +70,7 @@
                 <label>Low Stock Alert</label>
                 <input type="number" id="alertThreshold" value="150" onchange="refreshData()">
                 <hr style="border:0; border-top:1px solid #334155; margin:10px 0;">
-                <button class="btn btn-danger" style="width:100%; font-size:10px;" onclick="clearMovements()">Clear All Movements</button>
+                <button class="btn btn-danger" style="width:100%; font-size:10px; background:#e11d48; color:white" onclick="clearMovements()">Clear All Movements</button>
             </div>
             <button class="btn btn-outline" style="margin-top:15px; color:white; border-color:#334155;" onclick="handleLogout()">Sign Out</button>
         </div>
@@ -84,9 +84,9 @@
                 <div class="stat-card"><h4>Std Debt</h4><p id="debt-std" style="color:var(--primary)">0</p></div>
             </div>
             <div class="chart-container"><canvas id="debtChart"></canvas></div>
-            <h3>Active Balances</h3>
+            <h3>Quick Actions</h3>
             <table class="data-table">
-                <thead><tr><th>Customer</th><th>Main Type</th><th>Owed</th><th style="text-align:right">Action</th></tr></thead>
+                <thead><tr><th>Customer</th><th>Main Type</th><th>Total Owed</th><th style="text-align:right">Action</th></tr></thead>
                 <tbody id="dashBody"></tbody>
             </table>
         </div>
@@ -107,7 +107,7 @@
                 </div>
             </div>
             <table class="data-table">
-                <thead><tr><th>Name</th><th>Primary Type</th><th>CHEP</th><th>Euro</th><th>Std</th><th style="text-align:right">Report</th></tr></thead>
+                <thead><tr><th>Name</th><th>Primary Type</th><th>CHEP</th><th>Euro</th><th>Std</th><th style="text-align:right">Actions</th></tr></thead>
                 <tbody id="manageBody"></tbody>
             </table>
         </div>
@@ -184,8 +184,11 @@
                 
                 tChep += bChep; tEuro += bEuro; tStd += bStd;
 
-                dBody.innerHTML += `<tr><td><strong>${c.name}</strong></td><td><span class="badge badge-${c.primary_type?.toLowerCase() || 'std'}">${c.primary_type || 'Mixed'}</span></td><td>${totalDebt}</td><td style="text-align:right"><button class="btn btn-primary" style="padding:4px 10px; font-size:11px;" onclick="openModal('${c.name}')">Log</button></td></tr>`;
-                mBody.innerHTML += `<tr><td>${c.name}</td><td>${c.primary_type}</td><td>${bChep}</td><td>${bEuro}</td><td>${bStd}</td><td style="text-align:right"><button class="btn btn-outline" onclick="generatePDF('${c.name}')">PDF</button></td></tr>`;
+                // Safety Fallback for "undefined"
+                const displayType = c.primary_type || 'Standard';
+
+                dBody.innerHTML += `<tr><td><strong>${c.name}</strong></td><td><span class="badge badge-${displayType.toLowerCase()}">${displayType}</span></td><td>${totalDebt}</td><td style="text-align:right"><button class="btn btn-primary" style="padding:4px 10px; font-size:11px;" onclick="openModal('${c.name}')">Log Flow</button></td></tr>`;
+                mBody.innerHTML += `<tr><td>${c.name}</td><td>${displayType}</td><td>${bChep}</td><td>${bEuro}</td><td>${bStd}</td><td style="text-align:right"><button class="btn btn-outline" style="margin-right:5px" onclick="updatePrimaryType('${c.name}')">Set Type</button><button class="btn btn-outline" onclick="generatePDF('${c.name}')">PDF</button></td></tr>`;
             });
 
             logs.forEach(l => {
@@ -202,13 +205,19 @@
             if (typeof Chart !== 'undefined') updateChart(['CHEP', 'Euro', 'Standard'], [tChep, tEuro, tStd]);
         };
 
+        // NEW: Fix for undefined customers
+        window.updatePrimaryType = async (name) => {
+            const newType = prompt("Enter Pallet Type for " + name + " (CHEP, Euro, Standard, or Mixed):");
+            if (newType) {
+                await client.from('customers').update({ primary_type: newType }).eq('name', name);
+                refreshData();
+            }
+        };
+
         window.clearMovements = async () => {
-            if (confirm("DANGER: This will delete ALL transaction history and reset all balances to zero. This cannot be undone. Are you sure?")) {
-                // Delete all transactions
-                await client.from('transactions').delete().neq('qty', -1); // Deletes everything
-                // Reset customer counters
-                await client.from('customers').update({ delivered: 0, returned: 0 }).neq('name', 'none');
-                alert("All movements cleared.");
+            if (confirm("DANGER: This will delete ALL transaction history and reset balances. Keep customer list?")) {
+                await client.from('transactions').delete().neq('qty', -999999);
+                alert("Movements cleared.");
                 refreshData();
             }
         };
