@@ -3,45 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PalletTracker Pro</title>
+    <title>PalletTracker Pro - Login</title>
+    
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
     <style>
         /* --- BRANDING CSS STYLES --- */
         :root {
-            --primary: #ea580c; /* Safety Orange */
-            --primary-hover: #c2410c;
-            --sidebar-bg: #0b0f19; /* Deep Navy/Black */
-            --sidebar-hover: #1e293b;
-            --bg-color: #f8fafc; /* Very light grey/blue */
-            --card-bg: #ffffff;
-            --text-main: #334155;
-            --success: #16a34a;
-            --danger: #e11d48;
+            --primary: #ea580c; --primary-hover: #c2410c; --sidebar-bg: #0b0f19; 
+            --sidebar-hover: #1e293b; --bg-color: #f8fafc; --card-bg: #ffffff;
+            --text-main: #334155; --success: #16a34a; --danger: #e11d48;
         }
+        body { margin: 0; font-family: 'Outfit', sans-serif; background-color: var(--bg-color); color: var(--text-main); height: 100vh; overflow: hidden; }
         
-        /* NEW: Applying the custom font globally */
-        body { margin: 0; font-family: 'Outfit', sans-serif; background-color: var(--bg-color); color: var(--text-main); display: flex; height: 100vh; overflow: hidden;}
+        #loginScreen { display: flex; align-items: center; justify-content: center; width: 100vw; height: 100vh; background-color: var(--sidebar-bg); background-image: radial-gradient(circle at top right, #1e293b, transparent); }
+        .login-card { background: white; padding: 40px; border-radius: 12px; width: 100%; max-width: 400px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); box-sizing: border-box; }
+        .login-header { text-align: center; margin-bottom: 30px; }
+        .login-header .brand-icon { font-size: 2rem; background: var(--primary); padding: 10px 15px; border-radius: 12px; color: white; display: inline-block; margin-bottom: 15px;}
+        .login-header h2 { margin: 0; color: var(--sidebar-bg); font-size: 1.8rem; }
+        .login-header p { color: #64748b; margin-top: 5px; font-size: 0.95rem; }
+        .error-msg { color: var(--danger); font-size: 0.85rem; margin-bottom: 15px; text-align: center; display: none; }
+
+        #mainApp { display: none; width: 100%; height: 100vh; } 
         
-        /* Sidebar Branding Updates */
         .sidebar { width: 250px; background-color: var(--sidebar-bg); color: white; padding: 20px; display: flex; flex-direction: column; flex-shrink: 0; z-index: 20; transition: left 0.3s ease; }
-        
-        /* NEW: Branded Logo Area */
         .brand-logo { display: flex; align-items: center; gap: 10px; margin-bottom: 30px; font-size: 1.5rem; font-weight: 700; color: white; border-bottom: 1px solid #334155; padding-bottom: 20px;}
         .brand-icon { background: var(--primary); padding: 5px 10px; border-radius: 8px; color: white; }
-        
         .sidebar button { background: none; border: none; color: #94a3b8; text-align: left; font-size: 1.05rem; padding: 12px 15px; margin-bottom: 5px; cursor: pointer; border-radius: 6px; transition: 0.2s; font-family: 'Outfit', sans-serif;}
         .sidebar button:hover { color: white; background-color: var(--sidebar-hover); }
         .sidebar button.active { color: white; background-color: var(--primary); font-weight: 600; }
-        
         .sidebar-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10; }
         .sidebar-overlay.active { display: block; }
 
-        .main-content { flex-grow: 1; padding: 20px 40px; overflow-y: auto; height: 100vh; box-sizing: border-box; }
+        .main-content { flex-grow: 1; padding: 20px 40px; overflow-y: auto; height: 100vh; box-sizing: border-box; background: var(--bg-color);}
         header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; gap: 15px; }
         .header-controls { display: flex; align-items: center; gap: 15px; flex-grow: 1; }
         header input { padding: 12px; width: 100%; max-width: 350px; border: 1px solid #e2e8f0; border-radius: 8px; box-sizing: border-box; font-family: 'Outfit', sans-serif; background: white;}
-        
         .mobile-menu-btn { display: none; background: var(--primary); color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; font-size: 1.2rem; }
 
         .view-section { display: none; } 
@@ -54,11 +54,9 @@
         .card p { margin: 0; font-size: 2.2rem; font-weight: 700; color: var(--sidebar-bg); }
         
         .chart-container { background-color: var(--card-bg); padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); margin-bottom: 30px; height: 300px; position: relative; border: 1px solid #f1f5f9;}
-        
         .table-container { background-color: var(--card-bg); padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); margin-bottom: 30px; border: 1px solid #f1f5f9;}
         .table-container h2 { margin-top: 0; color: var(--sidebar-bg); }
         .table-wrapper { overflow-x: auto; } 
-        
         table { width: 100%; border-collapse: collapse; text-align: left; min-width: 600px; } 
         th, td { padding: 15px 12px; border-bottom: 1px solid #f1f5f9; }
         th { background-color: #f8fafc; font-weight: 600; color: #475569;}
@@ -70,10 +68,13 @@
         .badge.delivery { background-color: #3b82f6; }
         .badge.return { background-color: var(--success); }
         
-        .btn { background-color: var(--primary); color: white; border: none; padding: 10px 18px; border-radius: 6px; cursor: pointer; white-space: nowrap; font-family: 'Outfit', sans-serif; font-weight: 600; transition: 0.2s;}
+        .btn { background-color: var(--primary); color: white; border: none; padding: 10px 18px; border-radius: 6px; cursor: pointer; white-space: nowrap; font-family: 'Outfit', sans-serif; font-weight: 600; transition: 0.2s; width: 100%; box-sizing: border-box;}
         .btn:hover { background-color: var(--primary-hover); transform: translateY(-1px); }
+        .btn.inline { width: auto; }
         .btn-danger { background-color: var(--danger); }
         .btn-danger:hover { background-color: #be123c; }
+        .btn-outline { background-color: transparent; color: var(--primary); border: 2px solid var(--primary); }
+        .btn-outline:hover { background-color: var(--primary); color: white; }
 
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(15, 23, 42, 0.7); align-items: center; justify-content: center; z-index: 100; padding: 20px; box-sizing: border-box; backdrop-filter: blur(2px);}
         .modal-content { background-color: white; padding: 30px; border-radius: 12px; width: 100%; max-width: 400px; box-sizing: border-box; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);}
@@ -82,7 +83,7 @@
         .form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: #475569;}
         .form-group input, .form-group select { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; font-family: 'Outfit', sans-serif;}
         .form-group input:focus, .form-group select:focus { outline: none; border-color: var(--primary); }
-        .close-btn { background: #e2e8f0; color: #475569; margin-right: 10px; }
+        .close-btn { background: #e2e8f0; color: #475569; margin-right: 10px; width: auto;}
         .close-btn:hover { background: #cbd5e1; color: #1e293b;}
         .action-row { display: flex; gap: 10px; margin-bottom: 20px; align-items: flex-end;}
 
@@ -95,7 +96,7 @@
             header { flex-direction: column; align-items: stretch; }
             .header-controls { width: 100%; }
             header input { max-width: 100%; }
-            .user-profile { align-self: flex-end; }
+            .user-profile { align-self: flex-end; display: flex; gap: 10px; align-items: center;}
             .action-row { flex-direction: column; align-items: stretch; }
             .kpi-container { grid-template-columns: 1fr; }
         }
@@ -103,117 +104,111 @@
 </head>
 <body>
 
-    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
-
-    <aside class="sidebar" id="sidebar">
-        <div class="brand-logo">
-            <span class="brand-icon">📦</span>
-            <div>Pallet<span style="color: var(--primary)">Tracker</span></div>
-        </div>
-
-        <button class="nav-btn active" onclick="switchView('dashboardView', this)">Dashboard</button>
-        <button class="nav-btn" onclick="switchView('customersView', this)">Customers</button>
-        <button class="nav-btn" onclick="switchView('deliveriesView', this)">Deliveries Log</button>
-        <button class="nav-btn" onclick="switchView('returnsView', this)">Returns Log</button>
-        <button class="nav-btn" onclick="switchView('reportsView', this)">Reports</button>
-    </aside>
-
-    <main class="main-content">
-        <header>
-            <div class="header-controls">
-                <button class="mobile-menu-btn" onclick="toggleSidebar()">☰ Menu</button>
-                <input type="text" placeholder="Search customer...">
+    <div id="loginScreen">
+        <div class="login-card">
+            <div class="login-header">
+                <span class="brand-icon">📦</span>
+                <h2>PalletTracker Pro</h2>
+                <p>Sign in to manage logistics</p>
             </div>
-            <div class="user-profile">👤 Admin Profile</div>
-        </header>
-
-        <div id="dashboardView" class="view-section active">
-            <section class="kpi-container">
-                <div class="card"><h3>Total in Circulation</h3><p id="kpi-total">0</p></div>
-                <div class="card"><h3>Delivered</h3><p id="kpi-delivered">0</p></div>
-                <div class="card"><h3>Returned</h3><p id="kpi-returned">0</p></div>
-                <div class="card"><h3>Outstanding Deficit</h3><p id="kpi-deficit" style="color: var(--danger);">0</p></div>
-            </section>
-            <section class="chart-container"><canvas id="palletChart"></canvas></section>
-            
-            <section class="table-container">
-                <h2>Customer Pallet Ledger</h2>
-                <div class="table-wrapper">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Customer Name</th>
-                                <th>Delivered</th>
-                                <th>Returned</th>
-                                <th>Balance</th>
-                                <th>Status</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody id="ledgerTableBody"></tbody>
-                    </table>
-                </div>
-            </section>
+            <div id="loginError" class="error-msg">Incorrect username or password.</div>
+            <div class="form-group"><label>Email Address</label><input type="email" id="loginUsername" placeholder="Enter your email"></div>
+            <div class="form-group"><label>Password</label><input type="password" id="loginPassword" placeholder="Enter your password"></div>
+            <button class="btn" style="margin-top: 10px;" id="loginBtn" onclick="attemptLogin()">Sign In</button>
         </div>
+    </div>
 
-        <div id="customersView" class="view-section">
-            <h2>Manage Customers</h2>
-            <div class="card" style="margin-bottom: 30px;">
-                <h3>Add New Customer</h3>
-                <div class="action-row">
-                    <div class="form-group" style="margin-bottom: 0; flex-grow: 1;">
-                        <input type="text" id="newCustomerName" placeholder="Enter Company Name...">
+    <div id="mainApp">
+        <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+        <aside class="sidebar" id="sidebar">
+            <div class="brand-logo"><span class="brand-icon">📦</span><div>Pallet<span style="color: var(--primary)">Tracker</span></div></div>
+            <button class="nav-btn active" onclick="switchView('dashboardView', this)">Dashboard</button>
+            <button class="nav-btn" onclick="switchView('customersView', this)">Customers</button>
+            <button class="nav-btn" onclick="switchView('deliveriesView', this)">Deliveries Log</button>
+            <button class="nav-btn" onclick="switchView('returnsView', this)">Returns Log</button>
+            <button class="nav-btn" onclick="switchView('reportsView', this)">Reports</button>
+        </aside>
+
+        <main class="main-content">
+            <header>
+                <div class="header-controls">
+                    <button class="mobile-menu-btn" onclick="toggleSidebar()">☰ Menu</button>
+                    <input type="text" placeholder="Search customer...">
+                </div>
+                <div class="user-profile">
+                    <span id="userDisplay">👤 User</span> 
+                    <button class="btn btn-outline inline" style="padding: 6px 12px; margin-left: 15px;" onclick="logout()">Log Out</button>
+                </div>
+            </header>
+
+            <div id="dashboardView" class="view-section active">
+                <section class="kpi-container">
+                    <div class="card"><h3>Total in Circulation</h3><p id="kpi-total">0</p></div>
+                    <div class="card"><h3>Delivered</h3><p id="kpi-delivered">0</p></div>
+                    <div class="card"><h3>Returned</h3><p id="kpi-returned">0</p></div>
+                    <div class="card"><h3>Outstanding Deficit</h3><p id="kpi-deficit" style="color: var(--danger);">0</p></div>
+                </section>
+                <section class="chart-container"><canvas id="palletChart"></canvas></section>
+                <section class="table-container">
+                    <h2>Customer Pallet Ledger</h2>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead><tr><th>Customer Name</th><th>Delivered</th><th>Returned</th><th>Balance</th><th>Status</th><th>Action</th></tr></thead>
+                            <tbody id="ledgerTableBody"></tbody>
+                        </table>
                     </div>
-                    <button class="btn" onclick="addCustomer()">+ Add Customer</button>
+                </section>
+            </div>
+
+            <div id="customersView" class="view-section">
+                <h2>Manage Customers</h2>
+                <div class="card" style="margin-bottom: 30px;">
+                    <h3>Add New Customer</h3>
+                    <div class="action-row">
+                        <div class="form-group" style="margin-bottom: 0; flex-grow: 1;"><input type="text" id="newCustomerName" placeholder="Enter Company Name..."></div>
+                        <button class="btn inline" onclick="addCustomer()">+ Add Customer</button>
+                    </div>
+                </div>
+                <section class="table-container">
+                    <div class="table-wrapper">
+                        <table><thead><tr><th>Customer Name</th><th>Action</th></tr></thead><tbody id="customersListBody"></tbody></table>
+                    </div>
+                </section>
+            </div>
+
+            <div id="deliveriesView" class="view-section">
+                <h2>Outbound Deliveries Log</h2>
+                <section class="table-container">
+                    <div class="table-wrapper">
+                        <table><thead><tr><th>Date</th><th>Customer Name</th><th>Quantity</th><th>Type</th></tr></thead><tbody id="deliveriesTableBody"></tbody></table>
+                    </div>
+                </section>
+            </div>
+
+            <div id="returnsView" class="view-section">
+                <h2>Inbound Returns Log</h2>
+                <section class="table-container">
+                    <div class="table-wrapper">
+                        <table><thead><tr><th>Date</th><th>Customer Name</th><th>Quantity</th><th>Type</th></tr></thead><tbody id="returnsTableBody"></tbody></table>
+                    </div>
+                </section>
+            </div>
+
+            <div id="reportsView" class="view-section">
+                <h2>Export Data Reports</h2>
+                <div class="card">
+                    <h3>Generate Pallet Report</h3>
+                    <p style="color: #64748b; margin-bottom: 20px;">Select a date range to export your pallet flow data into an Excel-ready CSV file.</p>
+                    <div class="action-row">
+                        <div class="form-group" style="margin-bottom: 0;"><label>Start Date</label><input type="date" id="reportStartDate"></div>
+                        <div class="form-group" style="margin-bottom: 0;"><label>End Date</label><input type="date" id="reportEndDate"></div>
+                        <button class="btn inline" style="height: 46px;" onclick="exportToCSV()">📥 Export to Excel</button>
+                    </div>
                 </div>
             </div>
-            <section class="table-container">
-                <div class="table-wrapper">
-                    <table>
-                        <thead><tr><th>Customer Name</th><th>Action</th></tr></thead>
-                        <tbody id="customersListBody"></tbody>
-                    </table>
-                </div>
-            </section>
-        </div>
-
-        <div id="deliveriesView" class="view-section">
-            <h2>Outbound Deliveries Log</h2>
-            <section class="table-container">
-                <div class="table-wrapper">
-                    <table>
-                        <thead><tr><th>Date</th><th>Customer Name</th><th>Quantity</th><th>Type</th></tr></thead>
-                        <tbody id="deliveriesTableBody"></tbody>
-                    </table>
-                </div>
-            </section>
-        </div>
-
-        <div id="returnsView" class="view-section">
-            <h2>Inbound Returns Log</h2>
-            <section class="table-container">
-                <div class="table-wrapper">
-                    <table>
-                        <thead><tr><th>Date</th><th>Customer Name</th><th>Quantity</th><th>Type</th></tr></thead>
-                        <tbody id="returnsTableBody"></tbody>
-                    </table>
-                </div>
-            </section>
-        </div>
-
-        <div id="reportsView" class="view-section">
-            <h2>Export Data Reports</h2>
-            <div class="card">
-                <h3>Generate Pallet Report</h3>
-                <p style="color: #64748b; margin-bottom: 20px;">Select a date range to export your pallet flow data into an Excel-ready CSV file.</p>
-                <div class="action-row">
-                    <div class="form-group" style="margin-bottom: 0;"><label>Start Date</label><input type="date" id="reportStartDate"></div>
-                    <div class="form-group" style="margin-bottom: 0;"><label>End Date</label><input type="date" id="reportEndDate"></div>
-                    <button class="btn" style="height: 46px;" onclick="exportToCSV()">📥 Export to Excel</button>
-                </div>
-            </div>
-        </div>
-    </main>
+        </main>
+    </div>
 
     <div class="modal-overlay" id="logModal">
         <div class="modal-content">
@@ -221,21 +216,112 @@
             <div class="form-group"><label>Customer</label><input type="text" id="customerNameInput" readonly></div>
             <div class="form-group">
                 <label>Transaction Type</label>
-                <select id="transactionType">
-                    <option value="Delivery">Delivery to Customer</option>
-                    <option value="Return">Return from Customer</option>
-                </select>
+                <select id="transactionType"><option value="Delivery">Delivery to Customer</option><option value="Return">Return from Customer</option></select>
             </div>
             <div class="form-group"><label>Quantity</label><input type="number" id="quantityInput" placeholder="e.g. 50"></div>
             <div class="form-group"><label>Date</label><input type="date" id="transactionDate"></div>
             <div style="text-align: right; margin-top: 20px;">
-                <button class="btn close-btn" onclick="closeModal()">Cancel</button>
-                <button class="btn" onclick="saveEntry()">Save Entry</button>
+                <button class="btn close-btn inline" onclick="closeModal()">Cancel</button>
+                <button class="btn inline" onclick="saveEntry()">Save Entry</button>
             </div>
         </div>
     </div>
 
     <script>
+        // ==========================================
+        // 1. SUPABASE SETUP & CONFIGURATION
+        // ==========================================
+        
+        // YOUR UNIQUE SUPABASE CREDENTIALS
+        const supabaseUrl = 'https://yeiisilddmpgphvcuqxf.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InllaWlzaWxkZG1wZ3BodmN1cXhmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE0ODM4MjksImV4cCI6MjA4NzA1OTgyOX0.0f2xE3NqZm9QrWAlSi-AoLMWT4cqiArbY6VMt0KlHDA';
+
+        const usingRealSupabase = supabaseUrl !== 'YOUR_SUPABASE_URL';
+        
+        let supabase;
+
+        if (usingRealSupabase) {
+            // Initialize Supabase Client
+            supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+            
+            // Magic Listener: Watches for login/logout events automatically
+            supabase.auth.onAuthStateChange((event, session) => {
+                if (session && session.user) {
+                    // User successfully logged in!
+                    document.getElementById('loginScreen').style.display = 'none';
+                    document.getElementById('mainApp').style.display = 'flex';
+                    document.getElementById('userDisplay').innerText = "👤 " + session.user.email;
+                    updateEntireDashboard();
+                } else {
+                    // User logged out
+                    document.getElementById('mainApp').style.display = 'none';
+                    document.getElementById('loginScreen').style.display = 'flex';
+                }
+            });
+        }
+
+        // ==========================================
+        // 2. LOGIN / LOGOUT LOGIC
+        // ==========================================
+        
+        async function attemptLogin() {
+            const email = document.getElementById('loginUsername').value;
+            const pass = document.getElementById('loginPassword').value;
+            const errorMsg = document.getElementById('loginError');
+            const btn = document.getElementById('loginBtn');
+
+            btn.innerText = "Signing in...";
+
+            if (usingRealSupabase) {
+                // REAL SUPABASE AUTHENTICATION
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email: email,
+                    password: pass,
+                });
+
+                if (error) {
+                    errorMsg.innerText = error.message;
+                    errorMsg.style.display = 'block';
+                    btn.innerText = "Sign In";
+                } else {
+                    errorMsg.style.display = 'none';
+                    btn.innerText = "Sign In";
+                    // The onAuthStateChange listener above will handle showing the app
+                }
+
+            } else {
+                // DUMMY FALLBACK (So your code doesn't break while you test)
+                if ((email === 'admin' || email === 'admin@test.com') && pass === 'password123') {
+                    document.getElementById('loginScreen').style.display = 'none';
+                    document.getElementById('mainApp').style.display = 'flex';
+                    errorMsg.style.display = 'none';
+                    updateEntireDashboard();
+                } else {
+                    errorMsg.innerText = "Fallback Mode: Use 'admin' and 'password123'";
+                    errorMsg.style.display = 'block';
+                }
+                btn.innerText = "Sign In";
+            }
+        }
+
+        document.getElementById('loginPassword').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') { attemptLogin(); }
+        });
+
+        async function logout() {
+            if (usingRealSupabase) {
+                await supabase.auth.signOut(); // Supabase handles the redirect automatically via the listener above
+            } else {
+                document.getElementById('mainApp').style.display = 'none';
+                document.getElementById('loginScreen').style.display = 'flex';
+                document.getElementById('loginUsername').value = '';
+                document.getElementById('loginPassword').value = '';
+            }
+        }
+
+        // ==========================================
+        // 3. UI & DASHBOARD LOGIC (Unchanged)
+        // ==========================================
         let appData;
         let savedData = localStorage.getItem('palletLogisticsDataV2'); 
         if (savedData) { appData = JSON.parse(savedData); } 
@@ -277,12 +363,12 @@
             for (const [customerName, data] of Object.entries(appData.customers)) {
                 const balance = data.delivered - data.returned;
                 let badgeHTML = balance === 0 ? '<span class="badge balanced">Balanced</span>' : (balance > 100 ? '<span class="badge overdue">Overdue</span>' : '<span class="badge healthy">Healthy</span>');
-                tbody.innerHTML += `<tr><td>${customerName}</td><td>${data.delivered}</td><td>${data.returned}</td><td>${balance}</td><td>${badgeHTML}</td><td><button class="btn" onclick="openModal('${customerName}')">Log New</button></td></tr>`;
+                tbody.innerHTML += `<tr><td>${customerName}</td><td>${data.delivered}</td><td>${data.returned}</td><td>${balance}</td><td>${badgeHTML}</td><td><button class="btn inline" onclick="openModal('${customerName}')">Log New</button></td></tr>`;
             }
         }
         function renderCustomersTable() {
             const tbody = document.getElementById('customersListBody'); tbody.innerHTML = '';
-            for (const customerName in appData.customers) { tbody.innerHTML += `<tr><td><strong>${customerName}</strong></td><td><button class="btn btn-danger" onclick="deleteCustomer('${customerName}')">Remove</button></td></tr>`; }
+            for (const customerName in appData.customers) { tbody.innerHTML += `<tr><td><strong>${customerName}</strong></td><td><button class="btn btn-danger inline" onclick="deleteCustomer('${customerName}')">Remove</button></td></tr>`; }
         }
         function renderTransactionLogs() {
             const delBody = document.getElementById('deliveriesTableBody'); const retBody = document.getElementById('returnsTableBody');
@@ -299,12 +385,10 @@
             const retData = labels.map(key => appData.customers[key].returned);
             if (palletChart) { palletChart.destroy(); }
             const ctx = document.getElementById('palletChart').getContext('2d');
-            
-            // Brand update for chart colors
             palletChart = new Chart(ctx, {
                 type: 'bar',
                 data: { labels: labels, datasets: [
-                    { label: 'Delivered', data: delData, backgroundColor: '#3b82f6', borderRadius: 4 }, // Changed to bright blue
+                    { label: 'Delivered', data: delData, backgroundColor: '#3b82f6', borderRadius: 4 }, 
                     { label: 'Returned', data: retData, backgroundColor: '#16a34a', borderRadius: 4 }
                 ]},
                 options: { responsive: true, maintainAspectRatio: false }
@@ -345,7 +429,6 @@
             appData.transactions.push({ date: date, customer: name, type: type, qty: qty });
             saveDataToMemory(); updateEntireDashboard(); closeModal();
         }
-        updateEntireDashboard();
     </script>
 </body>
 </html>
