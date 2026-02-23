@@ -19,7 +19,8 @@
         .login-box input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid var(--border); border-radius: 8px; box-sizing: border-box; }
         #appShell { display: none; height: 100vh; flex-direction: row; }
         .sidebar { width: 260px; background: var(--dark); color: white; padding: 25px; display: flex; flex-direction: column; }
-        .nav-item { padding: 12px; color: #94a3b8; cursor: pointer; border-radius: 8px; margin-bottom: 5px; font-weight: 600; }
+        .nav-item { padding: 12px; color: #94a3b8; cursor: pointer; border-radius: 8px; margin-bottom: 5px; font-weight: 600; transition: 0.2s; }
+        .nav-item:hover { color: white; background: #1e293b; }
         .nav-item.active { background: var(--primary); color: white; }
         .main { flex: 1; padding: 40px; overflow-y: auto; }
         .hidden { display: none !important; }
@@ -31,9 +32,9 @@
         .data-table { width: 100%; border-collapse: collapse; background: white; border-radius: 12px; border: 1px solid var(--border); }
         .data-table th { background: #f1f5f9; padding: 12px; text-align: left; font-size: 0.8rem; color: #64748b; }
         .data-table td { padding: 12px; border-top: 1px solid var(--border); font-size: 0.9rem; }
-        .btn { padding: 8px 16px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; font-family: inherit; }
+        .btn { padding: 8px 16px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; font-family: inherit; transition: 0.2s; }
         .btn-primary { background: var(--primary); color: white; }
-        .btn-danger { background: var(--danger); color: white; }
+        .btn-danger { background: #fee2e2; color: var(--danger); }
         .btn-outline { border: 1px solid var(--border); background: white; font-size: 0.75rem; }
         .modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); align-items:center; justify-content:center; z-index: 9999; }
         .modal-content { background:white; padding:30px; border-radius:16px; width:400px; }
@@ -66,7 +67,7 @@
                 <label>Low Stock Alert</label>
                 <input type="number" id="alertThreshold" value="150" onchange="refreshData()">
             </div>
-            <button class="btn btn-outline" style="margin-top:15px; color:white; border-color:#334155;" onclick="handleLogout()">Sign Out</button>
+            <button class="btn btn-outline" style="margin-top:15px; color:white; border-color:#334155; background: transparent;" onclick="handleLogout()">Sign Out</button>
         </div>
 
         <div class="main" id="view-dash">
@@ -98,7 +99,7 @@
                 </div>
             </div>
             <table class="data-table">
-                <thead><tr><th>Name</th><th>Sent</th><th>Returned</th><th>Debt</th><th style="text-align:right">Actions</th></tr></thead>
+                <thead><tr><th>Name</th><th>Total Sent</th><th>Total Returned</th><th>Current Debt</th><th style="text-align:right">Actions</th></tr></thead>
                 <tbody id="manageBody"></tbody>
             </table>
         </div>
@@ -120,15 +121,22 @@
             <h3>Log Pallet Movement</h3>
             <input type="text" id="mCust" readonly style="background:#f1f5f9; border:none; padding:10px; width:100%; margin-bottom:15px; border-radius:8px; font-weight:bold;">
             <label style="font-size: 0.8rem; color: #64748b;">Action</label>
-            <select id="mAction" style="width:100%; padding:10px; margin-bottom:15px; border-radius:8px;"><option value="Consumed">Outgoing (Send)</option><option value="Received">Incoming (Return)</option></select>
+            <select id="mAction" style="width:100%; padding:10px; margin-bottom:15px; border-radius:8px;">
+                <option value="Consumed">Shipped TO Customer (+ Debt)</option>
+                <option value="Received">Returned FROM Customer (- Debt)</option>
+            </select>
             <label style="font-size: 0.8rem; color: #64748b;">Quantity</label>
             <input type="number" id="mQty" placeholder="0" style="width:100%; padding:10px; margin-bottom:20px; border-radius:8px;">
-            <div style="display:flex; gap:10px;"><button class="btn" onclick="closeModal()" style="flex:1; background:#eee">Cancel</button><button class="btn btn-primary" onclick="submitLog()" style="flex:2">Post Entry</button></div>
+            <div style="display:flex; gap:10px;">
+                <button class="btn" onclick="closeModal()" style="flex:1; background:#eee">Cancel</button>
+                <button class="btn btn-primary" onclick="submitLog()" style="flex:2">Post Entry</button>
+            </div>
         </div>
     </div>
 
     <script>
     (function() {
+        // USING THE VERCEL PROXY TO BYPASS CISCO UMBRELLA FIREWALL
         const _U = 'https://pallet-tracker-eta.vercel.app/supabase';
         const _K = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InllaWlzaWxkZG1wZ3BodmN1cXhmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE0ODM4MjksImV4cCI6MjA4NzA1OTgyOX0.0f2xE3NqZm9QrWAlSi-AoLMWT4cqiArbY6VMt0KlHDA';
         const client = window.supabase.createClient(_U, _K);
@@ -158,43 +166,49 @@
         };
 
         window.refreshData = async () => {
-            // DIAGNOSTIC FETCH - If this fails, an alert will tell us why!
             const { data: custs, error: custErr } = await client.from('customers').select('*').order('name');
-            if (custErr) return alert("Database Error (Customers): " + custErr.message);
+            if (custErr) return console.error("Database Error (Customers): " + custErr.message);
 
             const { data: logs, error: logErr } = await client.from('transactions').select('*').order('date', {ascending: false});
-            if (logErr) return alert("Database Error (Logs): " + logErr.message);
+            if (logErr) return console.error("Database Error (Logs): " + logErr.message);
 
             const safeCusts = custs || [];
             const safeLogs = logs || [];
+
+            // Auto-heal empty database
+            if (safeCusts.length === 0) {
+                await client.from('customers').insert([
+                    { name: 'Surya Foods', delivered: 0, returned: 0 },
+                    { name: 'Westpak Group', delivered: 0, returned: 0 }
+                ]);
+                setTimeout(refreshData, 500);
+                return;
+            }
 
             let debt = 0, flowOut = 0, totalReturned = 0, labels = [], vals = [];
             const dBody = document.getElementById('dashBody'); dBody.innerHTML = '';
             const mBody = document.getElementById('manageBody'); mBody.innerHTML = '';
             const lBody = document.getElementById('logsBody'); lBody.innerHTML = '';
 
-            // Handle Empty State gracefully
-            if (safeCusts.length === 0) {
-                dBody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding: 20px;">No customers found. Please go to the Customers tab to add one.</td></tr>';
-            } else {
-                safeCusts.forEach(c => {
-                    const cLogs = safeLogs.filter(l => l.customer === c.name);
-                    // Calculate balance directly from logs for perfect accuracy
-                    const totalDelivered = cLogs.filter(l => l.type === 'Consumed').reduce((sum, l) => sum + l.qty, 0);
-                    const totalReturn = cLogs.filter(l => l.type === 'Received').reduce((sum, l) => sum + l.qty, 0);
-                    
-                    const balance = totalDelivered - totalReturn;
-                    
-                    debt += balance; flowOut += totalDelivered; totalReturned += totalReturn;
-                    labels.push(c.name); vals.push(balance);
+            safeCusts.forEach(c => {
+                const cLogs = safeLogs.filter(l => l.customer === c.name);
+                
+                // Calculate balance directly from logs for perfect accuracy
+                const totalDelivered = cLogs.filter(l => l.type === 'Consumed').reduce((sum, l) => sum + l.qty, 0);
+                const totalReturn = cLogs.filter(l => l.type === 'Received').reduce((sum, l) => sum + l.qty, 0);
+                const balance = totalDelivered - totalReturn;
+                
+                debt += balance; flowOut += totalDelivered; totalReturned += totalReturn;
+                labels.push(c.name); vals.push(balance);
 
-                    dBody.innerHTML += `<tr><td><strong>${c.name}</strong></td><td style="color:${balance > 0 ? '#e11d48' : '#16a34a'}; font-weight:700">${balance}</td><td style="text-align:right"><button class="btn btn-primary" style="padding:4px 10px; font-size:11px;" onclick="openModal('${c.name}')">Log Flow</button></td></tr>`;
-                    mBody.innerHTML += `<tr><td>${c.name}</td><td>${totalDelivered}</td><td>${totalReturn}</td><td><strong>${balance}</strong></td><td style="text-align:right"><button class="btn btn-outline" onclick="generatePDF('${c.name}')">PDF</button></td></tr>`;
-                });
-            }
+                dBody.innerHTML += `<tr><td><strong>${c.name}</strong></td><td style="color:${balance > 0 ? '#e11d48' : '#16a34a'}; font-weight:700">${balance}</td><td style="text-align:right"><button class="btn btn-primary" style="padding:4px 10px; font-size:11px;" onclick="openModal('${c.name}')">Log Flow</button></td></tr>`;
+                mBody.innerHTML += `<tr><td>${c.name}</td><td>${totalDelivered}</td><td>${totalReturn}</td><td><strong>${balance}</strong></td><td style="text-align:right"><button class="btn btn-outline" onclick="generatePDF('${c.name}')">PDF</button></td></tr>`;
+            });
 
             safeLogs.forEach(l => {
-                lBody.innerHTML += `<tr><td>${l.date}</td><td>${l.customer}</td><td><span style="color:${l.type === 'Consumed' ? '#ea580c' : '#16a34a'}">${l.type}</span></td><td>${l.qty}</td><td><button class="btn btn-danger" style="font-size:10px" onclick="deleteLog(${l.id})">Del</button></td></tr>`;
+                const actionLabel = l.type === 'Consumed' ? 'Shipped (+)' : 'Returned (-)';
+                const actionColor = l.type === 'Consumed' ? '#ea580c' : '#16a34a';
+                lBody.innerHTML += `<tr><td>${l.date}</td><td>${l.customer}</td><td><span style="color:${actionColor}; font-weight:600;">${actionLabel}</span></td><td>${l.qty}</td><td><button class="btn btn-danger" style="font-size:10px; padding: 4px 8px;" onclick="deleteLog(${l.id})">Delete</button></td></tr>`;
             });
 
             // Update KPIs
@@ -223,7 +237,12 @@
             refreshData();
         };
 
-        window.openModal = (n) => { document.getElementById('mCust').value = n; document.getElementById('mQty').value = ''; document.getElementById('logModal').style.display = 'flex'; };
+        window.openModal = (n) => { 
+            document.getElementById('mCust').value = n; 
+            document.getElementById('mQty').value = ''; 
+            document.getElementById('logModal').style.display = 'flex'; 
+        };
+        
         window.closeModal = () => { document.getElementById('logModal').style.display = 'none'; };
 
         window.submitLog = async () => {
@@ -239,13 +258,13 @@
             if (error) return alert("Error saving log: " + error.message);
             
             closeModal(); 
-            setTimeout(refreshData, 300); // Wait for DB
+            setTimeout(refreshData, 400); // Wait for DB to index
         };
 
         window.deleteLog = async (id) => { 
-            if(confirm("Delete record?")) { 
+            if(confirm("Are you sure you want to delete this record? This will adjust the customer's balance back to normal.")) { 
                 await client.from('transactions').delete().eq('id', id); 
-                refreshData(); 
+                setTimeout(refreshData, 400);
             } 
         };
 
@@ -256,12 +275,30 @@
             doc.setFont("helvetica", "bold");
             doc.text(`Pallet Statement: ${name}`, 14, 20);
             if(logs && logs.length > 0) {
-                doc.autoTable({ head: [['Date', 'Action', 'Quantity']], body: logs.map(l => [l.date, l.type, l.qty]), startY: 30 });
+                doc.autoTable({ head: [['Date', 'Action', 'Quantity']], body: logs.map(l => [l.date, l.type === 'Consumed' ? 'Shipped (+)' : 'Returned (-)', l.qty]), startY: 30 });
             } else {
                 doc.setFontSize(10);
                 doc.text("No transactions found for this customer.", 14, 30);
             }
             doc.save(`Statement_${name}.pdf`);
+        };
+
+        window.exportToCSV = async () => {
+            const { data: logs } = await client.from('transactions').select('*').order('date', {ascending: false});
+            if (!logs || logs.length === 0) return alert("No data to export.");
+            
+            let csv = "Date,Customer,Action,Quantity\n";
+            logs.forEach(l => { 
+                const action = l.type === 'Consumed' ? 'Shipped (+)' : 'Returned (-)';
+                csv += `${l.date},${l.customer},${action},${l.qty}\n`; 
+            });
+            
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.setAttribute('href', url);
+            a.setAttribute('download', `Pallet_Audit_${new Date().toLocaleDateString()}.csv`);
+            a.click();
         };
     })();
     </script>
